@@ -3,7 +3,6 @@
 **Post once, publish everywhere — seamless cross-platform social posting.**  
 A lightweight MVP for managing and publishing content across multiple social platforms from one dashboard.
 
-
 ## ✨ Features (MVP)
 
 - 🔐 User authentication & simple profile.
@@ -13,7 +12,6 @@ A lightweight MVP for managing and publishing content across multiple social pla
 - ⏰ Post scheduling (basic).
 - 📊 Dashboard showing posted history.
 
-
 ## 🏗 Tech Stack
 
 **Frontend:** Vue / Inertia  
@@ -21,7 +19,6 @@ A lightweight MVP for managing and publishing content across multiple social pla
 **Database:** PostgreSQL  
 **APIs:** Twitter/X API, Facebook Graph API, LinkedIn API  
 **Infrastructure:** AWS
-
 
 ## 🚀 Getting Started
 
@@ -31,11 +28,9 @@ git clone https://github.com/zerexei/posexei.git
 cd posexei
 
 # Install dependencies
+composer install
 npm install
 
-# Run backend
-npm run dev
-
-# Run frontend
-cd frontend
-npm run dev
+# Run app
+composer run dev
+```
