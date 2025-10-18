@@ -57,7 +57,7 @@ import { Head, Link } from '@inertiajs/vue3';
                             <span>
                                 Read the
                                 <a
-                                    href="https://laravel.com/docs"
+                                    href="https://github.com/zerexei/posexei"
                                     target="_blank"
                                     class="ml-1 inline-flex items-center space-x-1 font-medium text-[#f53003] underline underline-offset-4 dark:text-[#FF4433]"
                                 >
@@ -88,7 +88,7 @@ import { Head, Link } from '@inertiajs/vue3';
                             <span>
                                 Watch video tutorials at
                                 <a
-                                    href="https://laracasts.com"
+                                    href="https://github.com/zerexei/posexei"
                                     target="_blank"
                                     class="ml-1 inline-flex items-center space-x-1 font-medium text-[#f53003] underline underline-offset-4 dark:text-[#FF4433]"
                                 >
@@ -110,7 +110,7 @@ import { Head, Link } from '@inertiajs/vue3';
                     <ul class="flex gap-3 text-sm leading-normal">
                         <li>
                             <a
-                                href="https://cloud.laravel.com"
+                                href="https://github.com/zerexei/posexei"
                                 target="_blank"
                                 class="inline-block rounded-sm border border-black bg-[#1b1b18] px-5 py-1.5 text-sm leading-normal text-white hover:border-black hover:bg-black dark:border-[#eeeeec] dark:bg-[#eeeeec] dark:text-[#1C1C1A] dark:hover:border-white dark:hover:bg-white"
                             >
