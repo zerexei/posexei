@@ -13,5 +13,5 @@ defineProps<Props>();
 </script>
 
 <template>
-    <img src="https://avatars.githubusercontent.com/u/69749146" alt="logo" class="size-full object-contain rounded-md" />
+    <img src="https://avatars.githubusercontent.com/u/69749146" alt="logo" class="size-full rounded-md object-contain" />
 </template>
