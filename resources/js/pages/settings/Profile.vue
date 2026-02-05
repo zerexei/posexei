@@ -3,6 +3,7 @@ import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileCo
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
@@ -18,7 +19,6 @@ interface Props {
     mustVerifyEmail: boolean;
     status?: string;
 }
-
 defineProps<Props>();
 
 const breadcrumbItems: BreadcrumbItem[] = [
@@ -30,6 +30,22 @@ const breadcrumbItems: BreadcrumbItem[] = [
 
 const page = usePage();
 const user = page.props.auth.user;
+
+const preview = ref<string>('');
+
+const handleAvatarChange = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
+
+    if (!file) return;
+
+    // Revoke the old preview URL if it exists to avoid memory leaks
+    if (preview.value) {
+        URL.revokeObjectURL(preview.value);
+    }
+
+    preview.value = URL.createObjectURL(file);
+};
 </script>
 
 <template>
@@ -41,6 +57,26 @@ const user = page.props.auth.user;
                 <HeadingSmall title="Profile information" description="Update your name and email address" />
 
                 <Form v-bind="ProfileController.update.form()" class="space-y-6" v-slot="{ errors, processing, recentlySuccessful }">
+                    <div class="grid gap-2">
+                        <Label for="avatar">Avatar</Label>
+
+                        <label for="avatar" class="group relative h-36 w-36 border-2 border-dashed hover:cursor-pointer">
+                            <input id="avatar" type="file" class="hidden" @change="handleAvatarChange" />
+
+                            <img
+                                :src="preview || user.avatar || '/storage/avatars/default.png'"
+                                alt="user avatar"
+                                class="h-full w-full object-cover"
+                            />
+
+                            <div class="flex-center absolute inset-0 bg-black/80 opacity-0 transition group-hover:opacity-100">
+                                <span class="text-sm text-white">Change</span>
+                            </div>
+                        </label>
+
+                        <InputError class="mt-2" :message="errors.avatar" />
+                    </div>
+
                     <div class="grid gap-2">
                         <Label for="name">Name</Label>
                         <Input
