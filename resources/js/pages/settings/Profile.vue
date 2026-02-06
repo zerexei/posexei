@@ -143,7 +143,7 @@ watch(
                             class="mt-1 block w-full"
                             name="email"
                             :default-value="user.email"
-                            required
+                            disabled
                             autocomplete="username"
                             placeholder="Email address"
                         />
