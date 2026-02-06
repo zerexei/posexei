@@ -3,7 +3,7 @@ import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileCo
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
@@ -29,9 +29,20 @@ const breadcrumbItems: BreadcrumbItem[] = [
 ];
 
 const page = usePage();
-const user = page.props.auth.user;
+const user = computed(() => page.props.auth.user);
 
+const avatarInput = ref<HTMLInputElement | null>(null);
 const preview = ref<string>('');
+
+const userAvatar = computed(() => {
+    if (preview.value) return preview.value;
+
+    if (user.value.avatar) {
+        return '/storage/' + user.value.avatar;
+    }
+
+    return '/storage/avatars/default.png';
+});
 
 const handleAvatarChange = (e: Event) => {
     const target = e.target as HTMLInputElement;
@@ -46,6 +57,25 @@ const handleAvatarChange = (e: Event) => {
 
     preview.value = URL.createObjectURL(file);
 };
+
+const resetAvatarInput = () => {
+    if (preview.value) {
+        URL.revokeObjectURL(preview.value);
+    }
+
+    if (avatarInput.value) {
+        avatarInput.value.value = '';
+    }
+
+    preview.value = '';
+};
+
+watch(
+    () => user.value.avatar,
+    () => {
+        resetAvatarInput();
+    },
+);
 </script>
 
 <template>
@@ -60,19 +90,33 @@ const handleAvatarChange = (e: Event) => {
                     <div class="grid gap-2">
                         <Label for="avatar">Avatar</Label>
 
-                        <label for="avatar" class="group relative h-36 w-36 border-2 border-dashed hover:cursor-pointer">
-                            <input id="avatar" type="file" class="hidden" @change="handleAvatarChange" />
+                        <div class="relative h-37 w-36 border-2 border-dashed">
+                            <label for="avatar" class="group hover:cursor-pointer">
+                                <input
+                                    ref="avatarInput"
+                                    id="avatar"
+                                    type="file"
+                                    class="hidden"
+                                    name="avatar"
+                                    accept="image/*"
+                                    @change="handleAvatarChange"
+                                />
+                                <img :src="userAvatar" alt="user avatar" class="h-full w-full object-cover" />
 
-                            <img
-                                :src="preview || user.avatar || '/storage/avatars/default.png'"
-                                alt="user avatar"
-                                class="h-full w-full object-cover"
-                            />
+                                <div class="flex-center absolute inset-0 bg-black/80 opacity-0 transition group-hover:opacity-100">
+                                    <span class="text-sm text-white">Change</span>
+                                </div>
+                            </label>
 
-                            <div class="flex-center absolute inset-0 bg-black/80 opacity-0 transition group-hover:opacity-100">
-                                <span class="text-sm text-white">Change</span>
-                            </div>
-                        </label>
+                            <button
+                                v-show="preview"
+                                @click="resetAvatarInput"
+                                type="button"
+                                class="absolute -top-4 -right-4 cursor-pointer text-red-500 hover:text-red-600"
+                            >
+                                &times;
+                            </button>
+                        </div>
 
                         <InputError class="mt-2" :message="errors.avatar" />
                     </div>
