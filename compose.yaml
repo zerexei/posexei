@@ -1,4 +1,7 @@
 services:
+    # =========================
+    # App - https://laravel.com
+    # =========================
     laravel.test:
         build:
             context: './vendor/laravel/sail/runtimes/8.5'
@@ -9,7 +12,6 @@ services:
         extra_hosts:
             - 'host.docker.internal:host-gateway'
         ports:
-            - '${APP_PORT:-80}:80'
             - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
         environment:
             WWWUSER: '${WWWUSER}'
@@ -23,6 +25,33 @@ services:
             - sail
         depends_on:
             - pgsql
+        labels:
+            - 'traefik.enable=true'
+            - 'traefik.http.routers.app.rule=Host(`app.localhost`)'
+            - 'traefik.http.routers.app.entrypoints=web'
+            - 'traefik.http.services.app.loadbalancer.server.port=80'
+
+    # =========================
+    # Traefik reverse proxy
+    # src: https://doc.traefik.io/traefik/getting-started/docker
+    # =========================
+    traefik:
+        image: traefik:v3.6
+        command:
+            - '--api.insecure=true'
+            - '--providers.docker=true'
+            - '--entrypoints.web.address=:80'
+        ports:
+            - '80:80'
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+            - sail
+        restart: always
+
+    # =========================
+    # PostgreSQL database
+    # =========================
     pgsql:
         image: 'postgres:18-alpine'
         ports:
@@ -49,20 +78,24 @@ services:
             retries: 3
             timeout: 5s
 
+    # =========================
+    # pgAdmin database management tool
     # src: https://www.pgadmin.org/docs/pgadmin4/latest/container_deployment.html
+    # =========================
     pgadmin:
         image: dpage/pgadmin4:9.12.0
-        container_name: pgadmin
         environment:
             PGADMIN_DEFAULT_EMAIL: admin@example.com
             PGADMIN_DEFAULT_PASSWORD: admin
-        ports:
-            - '3001:80'
         depends_on:
             - pgsql
         networks:
             - sail
-
+        labels:
+            - 'traefik.enable=true'
+            - 'traefik.http.routers.pgadmin.rule=Host(`pgadmin.localhost`)'
+            - 'traefik.http.routers.pgadmin.entrypoints=web'
+            - 'traefik.http.services.pgadmin.loadbalancer.server.port=80'
 networks:
     sail:
         driver: bridge
