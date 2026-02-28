@@ -91,6 +91,8 @@ services:
             - pgsql
         networks:
             - sail
+        volumes:
+            - sail-pgadmin:/var/lib/pgadmin
         labels:
             - 'traefik.enable=true'
             - 'traefik.http.routers.pgadmin.rule=Host(`pgadmin.localhost`)'
@@ -101,4 +103,6 @@ networks:
         driver: bridge
 volumes:
     sail-pgsql:
+        driver: local
+    sail-pgadmin:
         driver: local
