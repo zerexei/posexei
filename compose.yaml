@@ -48,6 +48,21 @@ services:
                 - '${DB_USERNAME}'
             retries: 3
             timeout: 5s
+
+    # src: https://www.pgadmin.org/docs/pgadmin4/latest/container_deployment.html
+    pgadmin:
+        image: dpage/pgadmin4:9.12.0
+        container_name: pgadmin
+        environment:
+            PGADMIN_DEFAULT_EMAIL: admin@example.com
+            PGADMIN_DEFAULT_PASSWORD: admin
+        ports:
+            - '3001:80'
+        depends_on:
+            - pgsql
+        networks:
+            - sail
+
 networks:
     sail:
         driver: bridge
