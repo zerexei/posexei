@@ -22,16 +22,19 @@ const { isMobile, state } = useSidebar();
         <SidebarMenuItem>
             <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                    <SidebarMenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                    <SidebarMenuButton 
+                        size="lg" 
+                        class="h-12 rounded-2xl transition-all hover:bg-muted data-[state=open]:bg-muted"
+                    >
                         <UserInfo :user="user" />
-                        <ChevronsUpDown class="ml-auto size-4" />
+                        <ChevronsUpDown class="ml-auto size-3.5 opacity-50" />
                     </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                    class="w-(--reka-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+                    class="w-(--reka-dropdown-menu-trigger-width) min-w-56 rounded-[1.25rem] shadow-2xl border-border/60 p-2"
                     :side="isMobile ? 'bottom' : state === 'collapsed' ? 'left' : 'bottom'"
                     align="end"
-                    :side-offset="4"
+                    :side-offset="8"
                 >
                     <UserMenuContent :user="user" />
                 </DropdownMenuContent>

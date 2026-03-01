@@ -22,15 +22,15 @@ const showAvatar = computed(() => props.user.avatar && props.user.avatar !== '')
 </script>
 
 <template>
-    <Avatar class="h-8 w-8 overflow-hidden rounded-lg">
+    <Avatar class="h-8 w-8 overflow-hidden rounded-full border border-border/50 shadow-sm">
         <AvatarImage v-if="showAvatar" :src="'/storage/' + user.avatar!" :alt="user.name" />
-        <AvatarFallback class="rounded-lg text-black dark:text-white">
+        <AvatarFallback class="rounded-full bg-muted font-black text-[10px] text-foreground">
             {{ getInitials(user.name) }}
         </AvatarFallback>
     </Avatar>
 
-    <div class="grid flex-1 text-left text-sm leading-tight">
-        <span class="truncate font-medium">{{ user.name }}</span>
-        <span v-if="showEmail" class="truncate text-xs text-muted-foreground">{{ user.email }}</span>
+    <div class="grid flex-1 text-left text-[11px] leading-tight ml-2">
+        <span class="truncate font-black uppercase tracking-widest text-foreground">{{ user.name }}</span>
+        <span v-if="showEmail" class="truncate text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tighter">{{ user.email }}</span>
     </div>
 </template>

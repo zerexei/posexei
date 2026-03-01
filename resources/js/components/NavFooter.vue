@@ -19,10 +19,10 @@ defineProps<Props>();
         <SidebarGroupContent>
             <SidebarMenu>
                 <SidebarMenuItem v-for="item in items" :key="item.title">
-                    <SidebarMenuButton class="text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-neutral-100" as-child>
+                    <SidebarMenuButton class="text-muted-foreground/60 hover:text-foreground transition-colors h-9 rounded-xl px-3 group" as-child>
                         <a :href="typeof item.href === 'string' ? item.href : item.href.url" target="_blank" rel="noopener noreferrer">
-                            <component :is="item.icon" />
-                            <span>{{ item.title }}</span>
+                            <component :is="item.icon" class="size-4 opacity-60 group-hover:opacity-100 transition-opacity" />
+                            <span class="text-[10px] font-black uppercase tracking-widest">{{ item.title }}</span>
                         </a>
                     </SidebarMenuButton>
                 </SidebarMenuItem>

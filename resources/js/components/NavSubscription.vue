@@ -20,14 +20,14 @@ const progress = computed(() => {
 
 <template>
     <SidebarGroup class="group-data-[collapsible=icon]:hidden px-2 py-4">
-        <div class="px-2 mb-4">
+        <div class="px-3 mb-4">
             <div class="flex items-center justify-between mb-2">
-                <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Subscription</span>
-                <span class="text-[10px] font-bold text-primary">{{ subscription.days_remaining }} days left</span>
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-50">Subscription</span>
+                <span class="text-[9px] font-black text-primary uppercase tracking-tighter">{{ subscription.days_remaining }} days left</span>
             </div>
             <div class="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                 <div 
-                    class="h-full bg-primary transition-all duration-1000" 
+                    class="h-full bg-primary transition-all duration-1000 shadow-[0_0_8px_rgba(var(--primary),0.4)]" 
                     :style="{ width: `${progress}%` }"
                 ></div>
             </div>
@@ -36,12 +36,14 @@ const progress = computed(() => {
         <SidebarGroupContent>
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton as-child class="bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-colors">
-                        <Link href="/settings/billing" class="flex items-center gap-3">
-                            <Sparkles class="w-4 h-4 text-primary" />
-                            <div class="flex flex-col">
-                                <span class="text-xs font-bold text-foreground leading-none">{{ subscription.plan }}</span>
-                                <span class="text-[10px] text-muted-foreground mt-1">Upgrade your features</span>
+                    <SidebarMenuButton as-child class="bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-all h-14 rounded-2xl p-0 overflow-hidden group">
+                        <Link href="/settings/billing" class="flex items-center gap-3 px-3 w-full h-full">
+                            <div class="p-2 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                                <Sparkles class="w-4 h-4 fill-current" />
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-[11px] font-black uppercase tracking-widest text-foreground leading-none">{{ subscription.plan }}</span>
+                                <span class="text-[9px] font-bold text-muted-foreground/60 mt-1.5 uppercase tracking-tighter truncate">Upgrade your features</span>
                             </div>
                         </Link>
                     </SidebarMenuButton>
