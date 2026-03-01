@@ -2,11 +2,17 @@
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import Sidebar from '@/components/ui/sidebar/Sidebar.vue';
+import SidebarContent from '@/components/ui/sidebar/SidebarContent.vue';
+import SidebarFooter from '@/components/ui/sidebar/SidebarFooter.vue';
+import SidebarHeader from '@/components/ui/sidebar/SidebarHeader.vue';
+import SidebarMenu from '@/components/ui/sidebar/SidebarMenu.vue';
+import SidebarMenuButton from '@/components/ui/sidebar/SidebarMenuButton.vue';
+import SidebarMenuItem from '@/components/ui/sidebar/SidebarMenuItem.vue';
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Send, BarChart2 } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -14,6 +20,16 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Posts',
+        href: '/posts',
+        icon: Send,
+    },
+    {
+        title: 'Analytics',
+        href: '/posts/analytics',
+        icon: BarChart2,
     },
 ];
 

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import ConfirmablePasswordController from '@/actions/App/Http/Controllers/Auth/ConfirmablePasswordController';
 import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import AuthLayout from '@/layouts/AuthLayout.vue';
+import Button from '@/components/ui/button/Button.vue';
+import Input from '@/components/ui/input/Input.vue';
+import Label from '@/components/ui/label/Label.vue';
+import AuthBase from '@/layouts/AuthLayout.vue';
 import { Form, Head } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 </script>
+
 
 <template>
     <AuthLayout title="Confirm your password" description="This is a secure area of the application. Please confirm your password before continuing.">

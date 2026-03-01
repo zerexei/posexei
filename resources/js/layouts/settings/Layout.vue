@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Heading from '@/components/Heading.vue';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import Button from '@/components/ui/button/Button.vue';
+import Separator from '@/components/ui/separator/Separator.vue';
 import { appearance } from '@/routes';
 import { edit as editPassword } from '@/routes/password';
 import { edit } from '@/routes/profile';
@@ -20,6 +20,10 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Appearance',
         href: appearance(),
+    },
+    {
+        title: 'Connections',
+        href: '/settings/connections',
     },
 ];
 

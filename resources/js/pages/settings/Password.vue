@@ -8,9 +8,9 @@ import { Form, Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 import HeadingSmall from '@/components/HeadingSmall.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import Button from '@/components/ui/button/Button.vue';
+import Input from '@/components/ui/input/Input.vue';
+import Label from '@/components/ui/label/Label.vue';
 import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbItems: BreadcrumbItem[] = [

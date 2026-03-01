@@ -6,19 +6,17 @@ import { ref } from 'vue';
 // Components
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import Button from '@/components/ui/button/Button.vue';
+import Dialog from '@/components/ui/dialog/Dialog.vue';
+import DialogClose from '@/components/ui/dialog/DialogClose.vue';
+import DialogContent from '@/components/ui/dialog/DialogContent.vue';
+import DialogDescription from '@/components/ui/dialog/DialogDescription.vue';
+import DialogFooter from '@/components/ui/dialog/DialogFooter.vue';
+import DialogHeader from '@/components/ui/dialog/DialogHeader.vue';
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue';
+import DialogTrigger from '@/components/ui/dialog/DialogTrigger.vue';
+import Input from '@/components/ui/input/Input.vue';
+import Label from '@/components/ui/label/Label.vue';
 
 const passwordInput = ref<InstanceType<typeof Input> | null>(null);
 </script>

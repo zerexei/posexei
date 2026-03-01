@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import SidebarGroup from '@/components/ui/sidebar/SidebarGroup.vue';
+import SidebarGroupContent from '@/components/ui/sidebar/SidebarGroupContent.vue';
+import SidebarMenu from '@/components/ui/sidebar/SidebarMenu.vue';
+import SidebarMenuButton from '@/components/ui/sidebar/SidebarMenuButton.vue';
+import SidebarMenuItem from '@/components/ui/sidebar/SidebarMenuItem.vue';
 import { type NavItem } from '@/types';
 
 interface Props {

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import UserInfo from '@/components/UserInfo.vue';
-import { DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import DropdownMenuGroup from '@/components/ui/dropdown-menu/DropdownMenuGroup.vue';
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue';
+import DropdownMenuLabel from '@/components/ui/dropdown-menu/DropdownMenuLabel.vue';
+import DropdownMenuSeparator from '@/components/ui/dropdown-menu/DropdownMenuSeparator.vue';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
 import type { User } from '@/types';

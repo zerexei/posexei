@@ -2,21 +2,22 @@
 import AuthenticatedSessionController from '@/actions/App/Http/Controllers/Auth/AuthenticatedSessionController';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import Button from '@/components/ui/button/Button.vue';
+import Checkbox from '@/components/ui/checkbox/Checkbox.vue';
+import Input from '@/components/ui/input/Input.vue';
+import Label from '@/components/ui/label/Label.vue';
 import AuthBase from '@/layouts/AuthLayout.vue';
-import { register } from '@/routes';
-import { request } from '@/routes/password';
+import { forgotPassword, register } from '@/routes';
 import { Form, Head } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 
-defineProps<{
+interface Props {
     status?: string;
-    canResetPassword: boolean;
-}>();
+}
+
+defineProps<Props>();
 </script>
+
 
 <template>
     <AuthBase title="Log in to your account" description="Enter your email and password below to log in">

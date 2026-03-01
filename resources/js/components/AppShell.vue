@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SidebarProvider } from '@/components/ui/sidebar';
+import SidebarProvider from '@/components/ui/sidebar/SidebarProvider.vue';
 import { usePage } from '@inertiajs/vue3';
 
 interface Props {
