@@ -21,4 +21,6 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/Appearance');
     })->name('appearance');
+
+    Route::get('settings/connections', [App\Http\Controllers\Settings\AccountController::class, 'edit'])->name('connections.edit');
 });
