@@ -18,6 +18,15 @@ Route::get('dashboard', function () {
         'upcoming' => [
             ['id' => 101, 'title' => 'Monday Motivation', 'platforms' => ['instagram'], 'date' => 'Tomorrow, 09:00 AM'],
             ['id' => 102, 'title' => 'Product Feature Teaser', 'platforms' => ['twitter', 'facebook'], 'date' => 'Wed, Mar 4, 02:00 PM'],
+        ],
+        'latestPosts' => [
+            ['id' => 1, 'title' => 'Summer Sale Kickoff', 'platforms' => ['instagram', 'facebook'], 'date' => '2h ago', 'status' => 'published'],
+            ['id' => 2, 'title' => 'New Feature Reveal', 'platforms' => ['twitter', 'linkedin'], 'date' => '5h ago', 'status' => 'published'],
+            ['id' => 3, 'title' => 'Community Spotlight', 'platforms' => ['facebook'], 'date' => '1d ago', 'status' => 'published'],
+        ],
+        'stats' => [
+            'posts_this_month' => 10,
+            'monthly_target' => 30,
         ]
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
