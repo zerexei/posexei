@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PostController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -8,14 +9,24 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
+    return Inertia::render('Dashboard', [
+        'connections' => [
+            ['id' => 1, 'provider' => 'facebook', 'name' => 'Marketing Page', 'status' => 'active'],
+            ['id' => 3, 'provider' => 'instagram', 'name' => 'Brand Account', 'status' => 'active'],
+            ['id' => 2, 'provider' => 'twitter', 'name' => 'Tech Updates', 'status' => 'active'],
+        ],
+        'upcoming' => [
+            ['id' => 101, 'title' => 'Monday Motivation', 'platforms' => ['instagram'], 'date' => 'Tomorrow, 09:00 AM'],
+            ['id' => 102, 'title' => 'Product Feature Teaser', 'platforms' => ['twitter', 'facebook'], 'date' => 'Wed, Mar 4, 02:00 PM'],
+        ]
+    ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('posts', [App\Http\Controllers\PostController::class, 'index'])->name('posts.index');
-    Route::get('posts/create', [App\Http\Controllers\PostController::class, 'create'])->name('posts.create');
-    Route::get('posts/analytics', [App\Http\Controllers\PostController::class, 'analytics'])->name('posts.analytics');
-    Route::get('posts/{id}', [App\Http\Controllers\PostController::class, 'show'])->name('posts.show');
+    Route::get('posts', [PostController::class, 'index'])->name('posts.index');
+    Route::get('posts/create', [PostController::class, 'create'])->name('posts.create');
+    Route::get('posts/analytics', [PostController::class, 'analytics'])->name('posts.analytics');
+    Route::get('posts/{id}', [PostController::class, 'show'])->name('posts.show');
 });
 
 require __DIR__.'/settings.php';

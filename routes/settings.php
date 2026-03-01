@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Settings\AccountController;
+use App\Http\Controllers\Settings\BillingController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -22,5 +24,6 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('settings/Appearance');
     })->name('appearance');
 
-    Route::get('settings/connections', [App\Http\Controllers\Settings\AccountController::class, 'edit'])->name('connections.edit');
+    Route::get('settings/connections', [AccountController::class, 'edit'])->name('connections.edit');
+    Route::get('settings/billing', [BillingController::class, 'edit'])->name('billing.edit');
 });

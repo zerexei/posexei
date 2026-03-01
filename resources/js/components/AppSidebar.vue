@@ -2,6 +2,7 @@
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
+import NavSubscription from '@/components/NavSubscription.vue';
 import Sidebar from '@/components/ui/sidebar/Sidebar.vue';
 import SidebarContent from '@/components/ui/sidebar/SidebarContent.vue';
 import SidebarFooter from '@/components/ui/sidebar/SidebarFooter.vue';
@@ -67,6 +68,7 @@ const footerNavItems: NavItem[] = [
 
         <SidebarFooter>
             <NavFooter :items="footerNavItems" />
+            <NavSubscription />
             <NavUser />
         </SidebarFooter>
     </Sidebar>

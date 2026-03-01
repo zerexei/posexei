@@ -25,6 +25,10 @@ const sidebarNavItems: NavItem[] = [
         title: 'Connections',
         href: '/settings/connections',
     },
+    {
+        title: 'Billing',
+        href: '/settings/billing',
+    },
 ];
 
 const currentPath = typeof window !== undefined ? window.location.pathname : '';
