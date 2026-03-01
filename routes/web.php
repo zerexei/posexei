@@ -27,7 +27,7 @@ Route::get('dashboard', function () {
         'stats' => [
             'posts_this_month' => 10,
             'monthly_target' => 30,
-        ]
+        ],
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 

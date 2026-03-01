@@ -56,7 +56,7 @@ class BillingController extends Controller
                     'features' => ['Everything in Pro', 'Unlimited Team Members', 'White-label Reports', 'Dedicated Account Manager'],
                     'current' => false,
                 ],
-            ]
+            ],
         ]);
     }
 }
