@@ -23,59 +23,66 @@ import {
     Eye,
     BarChart2,
     Trash2,
-    Calendar,
     ArrowUpRight,
     TrendingUp,
     Check,
     Heart,
-    Clock
+    LayoutGrid,
+    List,
+    Clock,
+    XCircle,
+    Calendar,
+    ChevronDown,
+    Zap
 } from 'lucide-vue-next';
 import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue';
 import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue';
 import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue';
 import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue';
 import DropdownMenuSeparator from '@/components/ui/dropdown-menu/DropdownMenuSeparator.vue';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { cn } from '@/lib/utils';
 
-const breadcrumbs = [
-    { title: 'Feed', href: '/posts' },
-];
+const breadcrumbs = [{ title: 'Content Feed', href: '/posts' }];
+
+const viewMode = ref<'grid' | 'list'>('grid');
+const searchQuery = ref('');
+const activePlatformFilter = ref<string | null>(null);
 
 const posts = ref([
-    { id: 1, title: 'Product Launch Day!', type: 'image', status: 'published', platforms: ['instagram', 'facebook'], created_at: '2h ago', engagement: '2.4k', reach: '12.5k' },
-    { id: 2, title: 'Quick Demo Video', type: 'video', status: 'published', platforms: ['youtube', 'linkedin'], created_at: '5h ago', engagement: '1.8k', reach: '8.2k' },
-    { id: 3, title: 'Hiring Full-stack Devs', type: 'text', status: 'draft', platforms: ['twitter', 'linkedin'], created_at: '1d ago', engagement: '-', reach: '-' },
-    { id: 4, title: 'Weekly Recap', type: 'image', status: 'failed', platforms: ['instagram'], created_at: '2d ago', engagement: '-', reach: '-' },
+    { id: 1, title: 'Summer Collection 2026', type: 'image', status: 'published', platforms: ['instagram', 'facebook'], created_at: '2h ago', engagement: '2.4k', reach: '12.5k', content: 'Our new summer collection is finally here! #summer #fashion' },
+    { id: 2, title: 'Platform Demo Video', type: 'video', status: 'scheduled', platforms: ['youtube', 'linkedin'], created_at: 'Tomorrow, 9am', engagement: '-', reach: '-', content: 'Check out how easy it is to manage your social media with posexei.' },
+    { id: 3, title: 'Hiring: Senior Product Designer', type: 'text', status: 'draft', platforms: ['twitter', 'linkedin'], created_at: '1d ago', engagement: '-', reach: '-', content: 'We are looking for a Senior Product Designer to join our team!' },
+    { id: 4, title: 'Weekly Recap - Feb Week 4', type: 'image', status: 'failed', platforms: ['instagram'], created_at: '2d ago', engagement: '-', reach: '-', content: 'A quick look back at what we achieved this week.' },
+    { id: 5, title: 'New Feature Announcement', type: 'image', status: 'published', platforms: ['twitter', 'instagram'], created_at: '3d ago', engagement: '1.1k', reach: '5.2k', content: 'Exciting news! We just launched automated scheduling for LinkedIn.' },
 ]);
 
-const getStatusColor = (status: string) => {
+const filteredPosts = computed(() => {
+    return posts.value.filter(post => {
+        const matchesSearch = post.title.toLowerCase().includes(searchQuery.value.toLowerCase());
+        const matchesPlatform = !activePlatformFilter.value || post.platforms.includes(activePlatformFilter.value);
+        return matchesSearch && matchesPlatform;
+    });
+});
+
+const getStatusConfig = (status: string) => {
     switch (status) {
-        case 'published': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
-        case 'draft': return 'bg-muted/50 text-muted-foreground border-border';
-        case 'failed': return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20';
-        default: return 'bg-muted text-foreground border-border';
+        case 'published': return { color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', icon: Check, label: 'Published' };
+        case 'scheduled': return { color: 'bg-blue-500/10 text-blue-600 border-blue-500/20', icon: Clock, label: 'Scheduled' };
+        case 'draft': return { color: 'bg-muted/50 text-muted-foreground border-border', icon: Type, label: 'Draft' };
+        case 'failed': return { color: 'bg-rose-500/10 text-rose-600 border-rose-500/20', icon: XCircle, label: 'Failed' };
+        default: return { color: 'bg-muted text-foreground border-border', icon: Zap, label: status };
     }
 };
 
-const getPlatformColor = (platform: string) => {
+const getPlatformBrand = (platform: string) => {
     switch (platform) {
-        case 'facebook': return 'text-blue-600 bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/50';
-        case 'instagram': return 'text-pink-600 bg-pink-50 dark:bg-pink-950/30 border-pink-100 dark:border-pink-900/50';
-        case 'twitter': return 'text-sky-500 bg-sky-50 dark:bg-sky-950/30 border-sky-100 dark:border-sky-900/50';
-        case 'linkedin': return 'text-blue-700 bg-indigo-50 dark:bg-indigo-950/30 border-indigo-100 dark:border-indigo-900/50';
-        default: return 'text-muted-foreground bg-muted border-border/50';
-    }
-};
-
-const getPlatformIcon = (platform: string) => {
-    switch (platform) {
-        case 'instagram': return Instagram;
-        case 'facebook': return Facebook;
-        case 'twitter': return Twitter;
-        case 'linkedin': return Linkedin;
-        case 'youtube': return Youtube;
-        default: return Calendar;
+        case 'facebook': return { color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-100', icon: Facebook };
+        case 'instagram': return { color: 'text-pink-600', bg: 'bg-pink-50 dark:bg-pink-950/30', border: 'border-pink-100', icon: Instagram };
+        case 'twitter': return { color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-950/30', border: 'border-sky-100', icon: Twitter };
+        case 'linkedin': return { color: 'text-blue-700', bg: 'bg-indigo-50 dark:bg-indigo-950/30', border: 'border-indigo-100', icon: Linkedin };
+        case 'youtube': return { color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-100', icon: Youtube };
+        default: return { color: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border', icon: Zap };
     }
 };
 
@@ -93,132 +100,245 @@ const getTypeIcon = (type: string) => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <Head title="Content Feed" />
 
-        <div class="flex flex-col gap-6 p-6 max-w-7xl w-full mx-auto">
-            <!-- Header (Analytics Style) -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tight text-foreground">Content Feed</h1>
-                    <p class="text-muted-foreground text-sm">Monitor and manage your active social presence.</p>
+        <div class="flex flex-col gap-8 p-6 max-w-7xl w-full mx-auto pb-20">
+            <!-- Modern Header -->
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div class="space-y-1">
+                    <h1 class="text-3xl font-black tracking-tight text-foreground">Content Feed</h1>
+                    <p class="text-muted-foreground font-medium text-sm">Monitor, analyze and distribute your brand presence.</p>
                 </div>
-                <Link href="/posts/create">
-                    <Button class="rounded-xl px-6 h-11 gap-2 font-bold transition-all hover:scale-[1.02] border-0">
-                        <Plus class="w-4 h-4 stroke-[3px]" /> New Post
-                    </Button>
-                </Link>
-            </div>
-
-            <!-- Stats Bar (Analytics Style) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card v-for="stat in [
-                    { label: 'Published', value: '124', change: '+12%', color: 'text-emerald-500', bg: 'bg-emerald-500/10', icon: Check },
-                    { label: 'Total Reach', value: '82.1k', change: '+8.1%', color: 'text-blue-500', bg: 'bg-blue-500/10', icon: TrendingUp },
-                    { label: 'Engagement', value: '4.8%', change: '+0.5%', color: 'text-purple-500', bg: 'bg-purple-500/10', icon: Heart },
-                    { label: 'Drafts', value: '12', change: '-2', color: 'text-muted-foreground', bg: 'bg-muted/50', icon: Edit2 }
-                ]" :key="stat.label" class="rounded-2xl border-border bg-card">
-                    <CardContent>
-                        <div class="flex items-center justify-between">
-                            <div :class="cn('p-2.5 rounded-xl', stat.bg)">
-                                <component :is="stat.icon" :class="cn('w-5 h-5', stat.color)" />
-                            </div>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-muted text-muted-foreground border border-border/50">
-                                {{ stat.change }}
-                            </span>
-                        </div>
-                        <div class="mt-4">
-                            <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ stat.value }}</h3>
-                            <p class="text-[10px] font-black text-muted-foreground mt-1 uppercase tracking-widest opacity-60">{{ stat.label }}</p>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <!-- Feed Actions -->
-            <div class="flex flex-col lg:flex-row items-center gap-4">
-                <div class="relative flex-1 w-full">
-                    <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
-                    <Input placeholder="Search your feed..." class="pl-11 h-12 rounded-xl bg-card border-border shadow-none focus-visible:ring-primary/10" />
+                <div class="flex items-center gap-3">
+                    <div class="flex p-1 bg-muted/50 rounded-xl border border-border/50">
+                        <button 
+                            @click="viewMode = 'grid'"
+                            :class="cn('p-2 rounded-lg transition-all', viewMode === 'grid' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground')"
+                        >
+                            <LayoutGrid class="w-4 h-4" />
+                        </button>
+                        <button 
+                            @click="viewMode = 'list'"
+                            :class="cn('p-2 rounded-lg transition-all', viewMode === 'list' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground')"
+                        >
+                            <List class="w-4 h-4" />
+                        </button>
+                    </div>
+                    <Link href="/posts/create">
+                        <Button class="rounded-2xl px-6 h-11 gap-2 font-bold shadow-lg shadow-primary/20 border-0 transition-transform active:scale-95">
+                            <Plus class="w-4 h-4 stroke-[3px]" /> Create Post
+                        </Button>
+                    </Link>
                 </div>
-                <Button variant="outline" class="h-12 rounded-xl border-border bg-card px-6 gap-2 text-xs font-bold uppercase tracking-widest">
-                    <Filter class="w-4 h-4" /> Filters
-                </Button>
             </div>
 
-            <!-- Content Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Stats & Quick Filters Row -->
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- Search & Platform Filters -->
+                <div class="flex-1 space-y-4">
+                    <div class="flex flex-col sm:flex-row items-center gap-3">
+                        <div class="relative flex-1 w-full group">
+                            <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                            <Input 
+                                v-model="searchQuery"
+                                placeholder="Search by title or content..." 
+                                class="pl-11 h-12 rounded-2xl bg-card border-border shadow-none focus-visible:ring-primary/10 transition-all text-foreground" 
+                            />
+                        </div>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" class="h-12 px-6 rounded-2xl border-border bg-card font-bold text-xs uppercase tracking-widest gap-2 shrink-0">
+                                    <Filter class="w-4 h-4" /> Filters <ChevronDown class="w-3 h-3 opacity-50" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" class="w-56 rounded-2xl border-border bg-card p-2 shadow-2xl">
+                                <DropdownMenuItem class="rounded-xl font-bold text-xs uppercase tracking-widest py-3">All Content</DropdownMenuItem>
+                                <DropdownMenuItem class="rounded-xl font-bold text-xs uppercase tracking-widest py-3">Published Only</DropdownMenuItem>
+                                <DropdownMenuItem class="rounded-xl font-bold text-xs uppercase tracking-widest py-3">Scheduled Posts</DropdownMenuItem>
+                                <DropdownMenuSeparator class="bg-border/50" />
+                                <DropdownMenuItem class="rounded-xl font-bold text-xs uppercase tracking-widest py-3 text-rose-500">Reset Filters</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                    
+                    <!-- Platform Quick Access -->
+                    <div class="flex flex-wrap gap-2">
+                        <button 
+                            v-for="p in ['instagram', 'facebook', 'twitter', 'linkedin', 'youtube']" 
+                            :key="p"
+                            @click="activePlatformFilter = activePlatformFilter === p ? null : p"
+                            :class="cn(
+                                'flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all',
+                                activePlatformFilter === p 
+                                    ? cn(getPlatformBrand(p).bg, getPlatformBrand(p).color, 'border-current/30 scale-105 shadow-sm')
+                                    : 'border-border bg-card text-muted-foreground hover:border-primary/20'
+                            )"
+                        >
+                            <component :is="getPlatformBrand(p).icon" class="w-3.5 h-3.5" />
+                            {{ p }}
+                        </button>
+                    </div>
+                </div>
 
-                <Card v-for="post in posts" :key="post.id" class="rounded-2xl border-border bg-card hover:border-primary/20 transition-all group overflow-hidden flex flex-col p-0">
-                    <div class="p-6 flex-1 space-y-5">
-                        <div class="flex items-start justify-between">
-                            <div class="w-11 h-11 rounded-xl bg-muted flex items-center justify-center border border-border/50 group-hover:bg-primary/5 transition-colors">
-                                <component :is="getTypeIcon(post.type)" class="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                            </div>
-                            <div class="flex items-center gap-1.5">
-                                <Badge variant="outline" :class="cn('rounded-full text-[9px] font-black uppercase px-2.5 py-0.5 border shadow-none', getStatusColor(post.status))">
-                                    {{ post.status }}
+                <!-- Summary Analytics -->
+                <div class="grid grid-cols-2 gap-3 lg:w-80">
+                    <div class="bg-emerald-500/[0.03] border border-emerald-500/10 p-4 rounded-3xl flex flex-col justify-between group hover:bg-emerald-500/[0.05] transition-colors">
+                        <span class="text-[10px] font-black uppercase tracking-tighter text-emerald-600/60">Live Posts</span>
+                        <h4 class="text-2xl font-black text-foreground">124</h4>
+                    </div>
+                    <div class="bg-muted/30 border border-border/50 p-4 rounded-3xl flex flex-col justify-between group hover:bg-muted/50 transition-colors">
+                        <span class="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Drafts</span>
+                        <h4 class="text-2xl font-black text-foreground">12</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Rendering -->
+            <div v-if="filteredPosts.length > 0">
+                <!-- GRID VIEW -->
+                <div v-if="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <Card v-for="post in filteredPosts" :key="post.id" class="rounded-[2.5rem] border-border bg-card hover:border-primary/20 transition-all group overflow-hidden flex flex-col shadow-none hover:shadow-xl hover:shadow-primary/5">
+                        <div class="p-7 flex-1 space-y-6">
+                            <div class="flex items-center justify-between">
+                                <div :class="cn('w-12 h-12 rounded-2xl bg-muted flex items-center justify-center border border-border/50 group-hover:bg-primary/5 transition-colors')">
+                                    <component :is="getTypeIcon(post.type)" class="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                                </div>
+                                <Badge variant="outline" :class="cn('rounded-full text-[9px] font-black uppercase px-3 py-1 border shadow-none flex items-center gap-1.5', getStatusConfig(post.status).color)">
+                                    <component :is="getStatusConfig(post.status).icon" class="w-3 h-3" />
+                                    {{ getStatusConfig(post.status).label }}
                                 </Badge>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" class="h-8 w-8 rounded-full">
-                                            <MoreHorizontal class="w-4 h-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" class="w-48 rounded-xl border-border bg-card shadow-2xl p-1.5">
-                                        <DropdownMenuItem class="gap-2 py-2.5 rounded-lg cursor-pointer font-bold text-xs text-foreground"><Edit2 class="w-3.5 h-3.5" /> Edit Post</DropdownMenuItem>
-                                        <DropdownMenuItem class="gap-2 py-2.5 rounded-lg cursor-pointer font-bold text-xs text-foreground"><BarChart2 class="w-3.5 h-3.5" /> Analytics</DropdownMenuItem>
-                                        <DropdownMenuSeparator class="my-1 border-border" />
-                                        <DropdownMenuItem class="gap-2 py-2.5 rounded-lg cursor-pointer text-rose-500 focus:text-rose-500 font-bold text-xs"><Trash2 class="w-3.5 h-3.5" /> Delete</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
                             </div>
-                        </div>
 
-                        <div class="space-y-1">
-                            <h3 class="font-bold text-lg leading-tight group-hover:text-primary transition-colors line-clamp-2 text-foreground">{{ post.title }}</h3>
-                            <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground opacity-60">
-                                <span>{{ post.type }}</span>
-                                <div class="w-1 h-1 rounded-full bg-border"></div>
-                                <span>{{ post.created_at }}</span>
+                            <div class="space-y-2">
+                                <h3 class="font-bold text-lg leading-snug group-hover:text-primary transition-colors line-clamp-2 text-foreground">{{ post.title }}</h3>
+                                <p class="text-xs text-muted-foreground line-clamp-2 leading-relaxed opacity-80">{{ post.content }}</p>
                             </div>
-                        </div>
 
-                        <div class="flex items-center justify-between pt-3 border-t border-border/50">
-                            <div class="flex -space-x-2.5">
-                                <div 
-                                    v-for="p in post.platforms" 
-                                    :key="p" 
-                                    :class="cn('w-9 h-9 rounded-full border-2 border-card flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm', getPlatformColor(p))" 
-                                    :title="p"
-                                >
-                                    <component :is="getPlatformIcon(p)" class="w-4 h-4" />
+                            <div class="flex items-center justify-between pt-4 border-t border-border/40">
+                                <div class="flex -space-x-2">
+                                    <div 
+                                        v-for="p in post.platforms" 
+                                        :key="p" 
+                                        :class="cn('w-9 h-9 rounded-full border-[3px] border-background flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm', getPlatformBrand(p).bg)" 
+                                        :title="p"
+                                    >
+                                        <component :is="getPlatformBrand(p).icon" class="w-4 h-4" :class="getPlatformBrand(p).color" />
+                                    </div>
+                                </div>
+                                <div class="text-right flex items-center gap-4">
+                                    <div v-if="post.status === 'published'" class="space-y-0.5">
+                                        <p class="text-xs font-black text-foreground leading-none">{{ post.reach }}</p>
+                                        <p class="text-[8px] font-black uppercase text-muted-foreground tracking-tighter opacity-60">Reach</p>
+                                    </div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" class="h-8 w-8 rounded-full hover:bg-muted">
+                                                <MoreHorizontal class="w-4 h-4 text-muted-foreground" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" class="w-48 rounded-2xl border-border bg-card shadow-2xl p-2">
+                                            <DropdownMenuItem class="gap-2 py-3 rounded-xl cursor-pointer font-bold text-[10px] uppercase tracking-widest"><Edit2 class="w-3.5 h-3.5" /> Edit</DropdownMenuItem>
+                                            <DropdownMenuItem class="gap-2 py-3 rounded-xl cursor-pointer font-bold text-[10px] uppercase tracking-widest"><BarChart2 class="w-3.5 h-3.5" /> Insights</DropdownMenuItem>
+                                            <DropdownMenuSeparator class="my-1 border-border/50" />
+                                            <DropdownMenuItem class="gap-2 py-3 rounded-xl cursor-pointer text-rose-500 focus:text-rose-500 font-bold text-[10px] uppercase tracking-widest"><Trash2 class="w-3.5 h-3.5" /> Delete</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
                             </div>
-                            <div v-if="post.status === 'published'" class="text-right">
-                                <p class="text-sm font-black text-foreground leading-none">{{ post.engagement }}</p>
-                                <p class="text-[9px] font-black uppercase text-muted-foreground tracking-tighter mt-1 opacity-60">Engagements</p>
-                            </div>
                         </div>
-                    </div>
 
-                    <div class="px-6 py-4 bg-muted/20 border-t border-border flex items-center justify-between group-hover:bg-primary/5 transition-colors">
-                        <Link :href="`/posts/${post.id}`" class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5">
-                            View Story <ArrowUpRight class="w-3 h-3" />
-                        </Link>
-                        <Button variant="ghost" size="sm" class="h-8 rounded-lg text-[10px] font-black gap-1.5 hover:bg-card px-3 border-transparent border hover:border-border">
-                            <Eye class="w-3.5 h-3.5" /> Preview
-                        </Button>
-                    </div>
-                </Card>
+                        <div class="px-7 py-4 bg-muted/20 border-t border-border/50 flex items-center justify-between group-hover:bg-primary/[0.02] transition-colors">
+                            <span class="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground opacity-50">{{ post.created_at }}</span>
+                            <Link :href="`/posts/${post.id}`">
+                                <Button variant="ghost" size="sm" class="h-8 rounded-xl text-[10px] font-black gap-1.5 hover:bg-card px-3 border-transparent border hover:border-border text-foreground">
+                                    <Eye class="w-3.5 h-3.5" /> Preview Post
+                                </Button>
+                            </Link>
+                        </div>
+                    </Card>
+                </div>
 
-                <!-- Add Card -->
-                <Link href="/posts/create" class="rounded-2xl border-2 border-dashed border-border hover:border-primary/40 hover:bg-primary/5 transition-all group flex flex-col items-center justify-center p-8 text-center space-y-4 min-h-45">
-                    <div class="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center group-hover:bg-primary group-hover:text-muted transition-all border border-border/50 shadow-none">
-                        <Plus class="w-7 h-7 stroke-[3px]" />
+                <!-- LIST VIEW -->
+                <div v-else class="bg-card border border-border rounded-[2rem] overflow-hidden shadow-none">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-muted/20 border-b border-border/50">
+                                <tr>
+                                    <th class="p-5 font-black uppercase tracking-widest text-[10px] text-muted-foreground">Content</th>
+                                    <th class="p-5 font-black uppercase tracking-widest text-[10px] text-muted-foreground">Channels</th>
+                                    <th class="p-5 font-black uppercase tracking-widest text-[10px] text-muted-foreground text-center">Status</th>
+                                    <th class="p-5 font-black uppercase tracking-widest text-[10px] text-muted-foreground">Performance</th>
+                                    <th class="p-5"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border/30">
+                                <tr v-for="post in filteredPosts" :key="post.id" class="group hover:bg-muted/10 transition-colors">
+                                    <td class="p-5">
+                                        <div class="flex items-center gap-4 min-w-[300px]">
+                                            <div class="w-10 h-10 rounded-xl bg-muted flex items-center justify-center border border-border/50 shrink-0">
+                                                <component :is="getTypeIcon(post.type)" class="w-5 h-5 text-muted-foreground" />
+                                            </div>
+                                            <div class="space-y-0.5">
+                                                <p class="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors">{{ post.title }}</p>
+                                                <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-widest opacity-60">{{ post.created_at }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-5">
+                                        <div class="flex -space-x-1.5">
+                                            <div v-for="p in post.platforms" :key="p" :class="cn('w-7 h-7 rounded-full border-2 border-background flex items-center justify-center', getPlatformBrand(p).bg)">
+                                                <component :is="getPlatformBrand(p).icon" class="w-3 h-3" :class="getPlatformBrand(p).color" />
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-5 text-center">
+                                        <Badge variant="outline" :class="cn('rounded-full text-[9px] font-black uppercase px-2.5 py-0.5 border shadow-none inline-flex items-center gap-1', getStatusConfig(post.status).color)">
+                                            <component :is="getStatusConfig(post.status).icon" class="w-2.5 h-2.5" />
+                                            {{ getStatusConfig(post.status).label }}
+                                        </Badge>
+                                    </td>
+                                    <td class="p-5">
+                                        <div v-if="post.status === 'published'" class="flex items-center gap-4">
+                                            <div class="text-center">
+                                                <p class="text-xs font-black text-foreground">{{ post.reach }}</p>
+                                                <p class="text-[8px] font-black uppercase text-muted-foreground tracking-tighter opacity-50 leading-none">Reach</p>
+                                            </div>
+                                            <div class="text-center">
+                                                <p class="text-xs font-black text-foreground">{{ post.engagement }}</p>
+                                                <p class="text-[8px] font-black uppercase text-muted-foreground tracking-tighter opacity-50 leading-none">Eng.</p>
+                                            </div>
+                                        </div>
+                                        <span v-else class="text-[10px] font-black text-muted-foreground/30 uppercase tracking-widest">—</span>
+                                    </td>
+                                    <td class="p-5 text-right">
+                                        <div class="flex items-center justify-end gap-1">
+                                            <Link :href="`/posts/${post.id}`">
+                                                <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg hover:bg-primary/5 hover:text-primary">
+                                                    <ArrowUpRight class="w-4 h-4 text-foreground" />
+                                                </Button>
+                                            </Link>
+                                            <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg hover:bg-muted">
+                                                <MoreHorizontal class="w-4 h-4 text-muted-foreground" />
+                                            </Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div>
-                        <p class="font-bold text-lg text-foreground leading-tight">Create Content</p>
-                        <p class="text-[11px] text-muted-foreground font-medium max-w-45 mt-1 leading-relaxed">Launch your next social media campaign.</p>
-                    </div>
-                </Link>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else class="py-20 text-center space-y-6">
+                <div class="w-20 h-20 rounded-[2rem] bg-muted/50 flex items-center justify-center mx-auto border border-border shadow-inner">
+                    <Search class="w-10 h-10 text-muted-foreground opacity-20" />
+                </div>
+                <div class="space-y-2">
+                    <h3 class="text-xl font-bold text-foreground">No matches found</h3>
+                    <p class="text-sm text-muted-foreground max-w-xs mx-auto">We couldn't find any posts matching your current filters or search query.</p>
+                </div>
+                <Button variant="outline" class="rounded-2xl h-11 px-8 font-bold border-dashed border-border" @click="searchQuery = ''; activePlatformFilter = null">
+                    Clear all filters
+                </Button>
             </div>
         </div>
     </AppLayout>
