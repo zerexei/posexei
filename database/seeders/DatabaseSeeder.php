@@ -21,9 +21,12 @@ class DatabaseSeeder extends Seeder
         $permission = Permission::firstOrCreate(['name' => 'settings.view']);
         $admin->permissions()->sync([$permission->id], detaching: false);
 
-        User::firstOrCreate([
+        if (User::count()) {
+            return;
+        }
+
+        User::factory()->create([
             'email' => 'test@example.com',
-        ], [
             'name' => 'Test User',
             'role_id' => $admin->id,
         ]);
