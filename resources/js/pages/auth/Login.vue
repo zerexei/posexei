@@ -7,12 +7,14 @@ import Checkbox from '@/components/ui/checkbox/Checkbox.vue';
 import Input from '@/components/ui/input/Input.vue';
 import Label from '@/components/ui/label/Label.vue';
 import AuthBase from '@/layouts/AuthLayout.vue';
-import { forgotPassword, register } from '@/routes';
+import password from '@/routes/password';
+import { register } from '@/routes';
 import { Form, Head } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 
 interface Props {
     status?: string;
+    canResetPassword: boolean;
 }
 
 defineProps<Props>();
@@ -28,7 +30,7 @@ defineProps<Props>();
         </div>
 
         <Form
-            v-bind="AuthenticatedSessionController.store.form()"
+            v-bind="AuthenticatedSessionController.store.post()"
             :reset-on-success="['password']"
             v-slot="{ errors, processing }"
             class="flex flex-col gap-6"
@@ -52,7 +54,7 @@ defineProps<Props>();
                 <div class="grid gap-2">
                     <div class="flex items-center justify-between">
                         <Label for="password">Password</Label>
-                        <TextLink v-if="canResetPassword" :href="request()" class="text-sm" :tabindex="5"> Forgot password? </TextLink>
+                        <TextLink v-if="canResetPassword" :href="password.request()" class="text-sm" :tabindex="5"> Forgot password? </TextLink>
                     </div>
                     <Input
                         id="password"
