@@ -25,5 +25,6 @@ Route::middleware('auth')->group(function () {
     })->name('appearance');
 
     Route::get('settings/connections', [AccountController::class, 'edit'])->name('connections.edit');
+    Route::post('settings/connections', [AccountController::class, 'store'])->name('connections.store');
     Route::get('settings/billing', [BillingController::class, 'edit'])->name('billing.edit');
 });

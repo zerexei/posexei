@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -44,5 +45,20 @@ class AccountController extends Controller
                 ],
             ],
         ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'provider' => 'required|string|in:facebook,linkedin,twitter,instagram',
+            'access_key' => 'required|string|min:10',
+        ]);
+
+
+        // In a real application, you would verify the access key with the provider
+        // and store the connection in the database.
+        // For now, we'll just redirect back with a success message.
+
+        return back()->with('success', 'Social account connected successfully.');
     }
 }

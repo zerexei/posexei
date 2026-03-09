@@ -1,13 +1,22 @@
 <script setup lang="ts">
+import AccountController from '@/actions/App/Http/Controllers/Settings/AccountController';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import Badge from '@/components/ui/badge/Badge.vue';
 import Button from '@/components/ui/button/Button.vue';
 import Card from '@/components/ui/card/Card.vue';
 import CardContent from '@/components/ui/card/CardContent.vue';
+import Dialog from '@/components/ui/dialog/Dialog.vue';
+import DialogContent from '@/components/ui/dialog/DialogContent.vue';
+import DialogDescription from '@/components/ui/dialog/DialogDescription.vue';
+import DialogFooter from '@/components/ui/dialog/DialogFooter.vue';
+import DialogHeader from '@/components/ui/dialog/DialogHeader.vue';
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue';
+import Input from '@/components/ui/input/Input.vue';
+import Label from '@/components/ui/label/Label.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
+import { Form, Head } from '@inertiajs/vue3';
 import {
     AlertCircle,
     CheckCircle2,
@@ -22,7 +31,7 @@ import {
     Twitter,
     XCircle,
 } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 interface Connection {
     id: number;
@@ -33,11 +42,20 @@ interface Connection {
     expires_at?: string;
 }
 
+interface Provider {
+    id: 'facebook' | 'linkedin' | 'twitter' | 'instagram';
+    name: string;
+    icon: any;
+    color: string;
+    bg: string;
+    borderColor: string;
+}
+
 const props = defineProps<{
     connections: Connection[];
 }>();
 
-const providers = [
+const providers: Provider[] = [
     {
         id: 'facebook',
         name: 'Facebook',
@@ -71,6 +89,19 @@ const providers = [
         borderColor: 'border-sky-100 dark:border-sky-900/50',
     },
 ];
+
+const selectedProvider = ref<Provider | null>(null);
+const isDialogOpen = ref(false);
+
+const openConnectionDialog = (provider: Provider) => {
+    selectedProvider.value = provider;
+    isDialogOpen.value = true;
+};
+
+const closeConnectionDialog = () => {
+    selectedProvider.value = null;
+    isDialogOpen.value = false;
+};
 
 const connectedProviders = computed(() => {
     const grouped = props.connections.reduce(
@@ -109,13 +140,6 @@ const breadcrumbItems: BreadcrumbItem[] = [
         href: '/settings/connections',
     },
 ];
-
-const handleFacebookLogin = () => {
-    window.FB.login(function (response: any) {
-        console.log(response);
-        // handle the response
-    });
-};
 </script>
 
 <template>
@@ -138,7 +162,7 @@ const handleFacebookLogin = () => {
                         <button
                             v-for="provider in providers"
                             :key="provider.id"
-                            @click="handleFacebookLogin"
+                            @click="openConnectionDialog(provider)"
                             class="group flex flex-col items-center justify-center rounded-2xl border border-border bg-card p-4 transition-all duration-200 hover:border-primary/50 hover:bg-primary/5"
                         >
                             <div :class="['mb-3 rounded-xl p-3 transition-transform group-hover:scale-110', provider.bg]">
@@ -149,6 +173,40 @@ const handleFacebookLogin = () => {
                         </button>
                     </div>
                 </section>
+
+                <Dialog v-if="selectedProvider" v-model:open="isDialogOpen">
+                    <DialogContent class="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle class="flex items-center gap-2">
+                                <component :is="selectedProvider?.icon" :class="['h-5 w-5', selectedProvider?.color]" />
+                                Connect {{ selectedProvider?.name }}
+                            </DialogTitle>
+                            <DialogDescription> Enter your access key to connect your {{ selectedProvider?.name }} account. </DialogDescription>
+                        </DialogHeader>
+
+                        <Form
+                            v-bind="AccountController.store.post()"
+                            :reset-on-success="['access_key']"
+                            @success="closeConnectionDialog"
+                            v-slot="{ errors, processing }"
+                            class="space-y-4 py-4"
+                        >
+                            <div class="space-y-2">
+                                <input type="hidden" name="provider" :value="selectedProvider.id" />
+                                <Label for="access_key" class="text-xs font-bold tracking-tight text-muted-foreground uppercase"> Access Key </Label>
+                                <Input id="access_key" name="access_key" placeholder="Enter your access key" :disabled="processing" />
+                                <span v-if="errors.access_key" class="text-xs text-destructive">{{ errors.access_key }}</span>
+                            </div>
+
+                            <DialogFooter>
+                                <Button type="submit" :disabled="processing" class="w-full">
+                                    <template v-if="processing"> Connecting... </template>
+                                    <template v-else> Connect Account </template>
+                                </Button>
+                            </DialogFooter>
+                        </Form>
+                    </DialogContent>
+                </Dialog>
 
                 <!-- Active Connections -->
                 <section class="space-y-6">
