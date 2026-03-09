@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -58,6 +59,12 @@ class AccountController extends Controller
         // In a real application, you would verify the access key with the provider
         // and store the connection in the database.
         // For now, we'll just redirect back with a success message.
+
+        $accounts = Http::get('https://graph.facebook.com/v25.0/me/accounts', [
+            'access_token' => $request->access_key,
+        ]);
+
+        dd($accounts);
 
         return back()->with('success', 'Social account connected successfully.');
     }
