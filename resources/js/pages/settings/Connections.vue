@@ -17,6 +17,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Form, Head } from '@inertiajs/vue3';
+import { useToast } from '@/components/ui/toast/useToast';
 import {
     AlertCircle,
     CheckCircle2,
@@ -103,6 +104,26 @@ const closeConnectionDialog = () => {
     isDialogOpen.value = false;
 };
 
+const { toast } = useToast();
+
+const handleSuccess = () => {
+    const providerName = selectedProvider.value?.name;
+    closeConnectionDialog();
+    toast({
+        title: 'Account Connected',
+        description: `Successfully connected to ${providerName}.`,
+        variant: 'success',
+    });
+};
+
+const handleError = () => {
+    toast({
+        title: 'Connection Failed',
+        description: 'There was an error connecting your account.',
+        variant: 'danger',
+    });
+};
+
 const connectedProviders = computed(() => {
     const grouped = props.connections.reduce(
         (acc, conn) => {
@@ -187,7 +208,8 @@ const breadcrumbItems: BreadcrumbItem[] = [
                         <Form
                             v-bind="AccountController.store.post()"
                             :reset-on-success="['access_key']"
-                            @success="closeConnectionDialog"
+                            @success="handleSuccess"
+                            @error="handleError"
                             v-slot="{ errors, processing }"
                             class="space-y-4 py-4"
                         >
