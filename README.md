@@ -35,6 +35,80 @@ npm install
 composer run dev
 ```
 
+(v2)
+-- OAuth Accounts table
+CREATE TABLE accounts (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id),
+    provider VARCHAR(50),               -- facebook, linkedin, twitter, instagram, youtube, etc.
+    external_user_id VARCHAR(255),      -- platform user id
+    access_token TEXT,
+    refresh_token TEXT,
+    expires_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Account destinations (pages, profiles, companies, channels)
+CREATE TABLE account_destinations (
+    id BIGINT PRIMARY KEY,
+    account_id BIGINT REFERENCES accounts(id),
+    destination_type VARCHAR(50),       -- profile, page, company, channel, group
+    external_id VARCHAR(255),           -- platform-specific destination id
+    name VARCHAR(255),
+    metadata_json JSONB,                -- optional metadata (followers, picture, etc.)
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Posts table
+CREATE TABLE posts (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id),
+    post_type VARCHAR(50),              -- text, image, video, carousel, link, article
+    text_content TEXT,
+    link_url TEXT,
+    status VARCHAR(50) DEFAULT 'draft', -- draft, scheduled, published
+    publish_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Post media table (for images/videos/etc.)
+CREATE TABLE post_media (
+    id BIGINT PRIMARY KEY,
+    post_id BIGINT REFERENCES posts(id),
+    media_type VARCHAR(50),             -- image, video, etc.
+    url TEXT,
+    position INT,                        -- order for carousel or multi-image posts
+    metadata_json JSONB,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Post destinations (fan-out table for publishing)
+CREATE TABLE post_destinations (
+    id BIGINT PRIMARY KEY,
+    post_id BIGINT REFERENCES posts(id),
+    destination_id BIGINT REFERENCES account_destinations(id),
+    status VARCHAR(50) DEFAULT 'pending', -- pending, publishing, success, failed
+    external_post_id VARCHAR(255),       -- platform-specific post id after publishing
+    retry_count INT DEFAULT 0,
+    error_message TEXT,
+    platform_payload_json JSONB,         -- optional payload for retries/debugging
+    published_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(post_id, destination_id)
+);
+
+
+
+
+
+
+(v1)
+
 #users
 - organization_id
 
@@ -139,3 +213,6 @@ post->platform
 - currency
 - status (pending | succeeded | failed | refunded)
 - raw_payload 
+
+
+

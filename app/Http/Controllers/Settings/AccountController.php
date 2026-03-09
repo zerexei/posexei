@@ -60,9 +60,17 @@ class AccountController extends Controller
         // and store the connection in the database.
         // For now, we'll just redirect back with a success message.
 
-        $accounts = Http::get('https://graph.facebook.com/v25.0/me/accounts', [
+        $response = Http::get('https://graph.facebook.com/v25.0/me/accounts', [
             'access_token' => $request->access_key,
         ]);
+
+        $accounts = collect($response->json('data'), [])->map(function ($account) {
+            return [
+                'id' => $account['id'],
+                'name' => $account['name'],
+                'access_token' => $account['access_token'],
+            ];
+        });
 
         dd($accounts);
 
