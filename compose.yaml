@@ -98,16 +98,13 @@ services:
             - 'traefik.http.services.pgadmin.loadbalancer.server.port=80'
     ngrok:
         image: ngrok/ngrok:latest
-        command:
-            - 'http'
-            - 'traefik:80'
-            - '--url=${NGROK_URL:-}'
-            - '--traffic-policy={"on_http_request":[{"actions":[{"type":"add-headers","config":{"headers":{"host":"app.localhost"}}}]}]}'
+        command: http --url=${NGROK_URL} laravel.test:80
         environment:
             NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
         networks:
             - sail
         depends_on:
+            - laravel.test
             - traefik
         ports:
             - '4040:4040'
