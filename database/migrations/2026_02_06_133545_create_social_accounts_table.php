@@ -14,7 +14,6 @@ return new class extends Migration
     {
         Schema::create('social_accounts', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Organization::class)->nullable()->constrained()->cascadeOnDelete();
             $table->foreignIdFor(User::class)->constrained()->cascadeOnDelete();
             $table->string('provider')->comment('facebook, instagram, thread, linkedin, youtube, tiktok');
             $table->string('external_user_id')->comment('platform user ID');
