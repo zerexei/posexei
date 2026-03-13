@@ -2,10 +2,10 @@
 
 namespace App\Models\Social;
 
+use App\Enums\Social\SocialProvider;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class SocialAccount extends Model
 {
@@ -19,10 +19,18 @@ class SocialAccount extends Model
         'expires_at',
     ];
 
-    protected $casts = [
-        'provider' => \App\Enums\Social\SocialProvider::class,
-        'expires_at' => 'datetime',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'provider' => SocialProvider::class,
+            'expires_at' => 'datetime',
+        ];
+    }
 
     public function user(): BelongsTo
     {
