@@ -29,6 +29,8 @@ class SocialAccount extends Model
         return [
             'provider' => SocialProvider::class,
             'expires_at' => 'datetime',
+            'access_token' => 'encrypted',
+            'refresh_token' => 'encrypted',
         ];
     }
 
