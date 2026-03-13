@@ -207,7 +207,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
 
                         <Form
                             v-bind="AccountController.store.post()"
-                            :reset-on-success="['access_key']"
+                            :reset-on-success="['access_token']"
                             @success="handleSuccess"
                             @error="handleError"
                             v-slot="{ errors, processing }"
@@ -215,9 +215,9 @@ const breadcrumbItems: BreadcrumbItem[] = [
                         >
                             <div class="space-y-2">
                                 <input type="hidden" name="provider" :value="selectedProvider.id" />
-                                <Label for="access_key" class="text-xs font-bold tracking-tight text-muted-foreground uppercase"> Access Key </Label>
-                                <Input id="access_key" name="access_key" placeholder="Enter your access key" :disabled="processing" />
-                                <span v-if="errors.access_key" class="text-xs text-destructive">{{ errors.access_key }}</span>
+                                <Label for="access_token" class="text-xs font-bold tracking-tight text-muted-foreground uppercase"> Access Key </Label>
+                                <Input id="access_token" name="access_token" placeholder="Enter your access key" :disabled="processing" />
+                                <span v-if="errors.access_token" class="text-xs text-destructive">{{ errors.access_token }}</span>
                             </div>
 
                             <DialogFooter>
