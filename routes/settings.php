@@ -1,9 +1,9 @@
 <?php
 
-use App\Http\Controllers\Social\SocialAccountController;
 use App\Http\Controllers\Settings\BillingController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Social\SocialAccountController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 

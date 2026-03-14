@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/api/webhook', function () {
-   return response(request('hub_challenge'));
+    return response(request('hub_challenge'));
 });
 
 Route::get('/', function () {
