@@ -100,35 +100,35 @@ class FacebookService implements ISocialProvider
         }
     }
 
-    // public function publishPost(string $pageId, string $pageAccessToken, string $message, ?string $link = null): array
-    // {
-    //     $payload = [
-    //         'access_token' => $pageAccessToken,
-    //         'message' => $message,
-    //     ];
+    public function publishPost(string $pageId, string $pageAccessToken, string $message, ?string $link = null): array
+    {
+        $payload = [
+            'access_token' => $pageAccessToken,
+            'message' => $message,
+        ];
 
-    //     if ($link) {
-    //         $payload['link'] = $link;
-    //     }
+        if ($link) {
+            $payload['link'] = $link;
+        }
 
-    //     $response = Http::post(self::BASE_URL."/{$pageId}/feed", $payload)->throw();
+        $response = Http::post(self::BASE_URL."/{$pageId}/feed", $payload)->throw();
 
-    //     return $response->json() ?? [];
-    // }
+        return $response->json() ?? [];
+    }
 
-    // public function publishPhoto(string $pageId, string $pageAccessToken, string $imageUrl, ?string $message = null): array
-    // {
-    //     $payload = [
-    //         'access_token' => $pageAccessToken,
-    //         'url' => $imageUrl,
-    //     ];
+    public function publishPhoto(string $pageId, string $pageAccessToken, string $imageUrl, ?string $message = null): array
+    {
+        $payload = [
+            'access_token' => $pageAccessToken,
+            'url' => $imageUrl,
+        ];
 
-    //     if ($message) {
-    //         $payload['message'] = $message;
-    //     }
+        if ($message) {
+            $payload['message'] = $message;
+        }
 
-    //     $response = Http::post(self::BASE_URL."/{$pageId}/photos", $payload)->throw();
+        $response = Http::post(self::BASE_URL."/{$pageId}/photos", $payload)->throw();
 
-    //     return $response->json() ?? [];
-    // }
+        return $response->json() ?? [];
+    }
 }
