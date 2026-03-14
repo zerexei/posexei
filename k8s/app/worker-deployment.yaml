@@ -13,6 +13,7 @@ spec:
       labels:
         app: posexei-worker
     spec:
+      serviceAccountName: posexei-app
       containers:
         - name: worker
           image: posexei:latest

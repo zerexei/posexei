@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class SocialChannel extends Model
 {
     protected $fillable = [
-        'destination_type',
+        'channel_type',
         'external_id',
         'name',
         'metadata_json',

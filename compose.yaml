@@ -30,6 +30,12 @@ services:
             - 'traefik.enable=true'
             - 'traefik.http.routers.app.rule=Host(`app.localhost`)'
             - 'traefik.http.services.app.loadbalancer.server.port=80'
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
 
     # =========================
     # Traefik reverse proxy
@@ -50,6 +56,11 @@ services:
         networks:
             - sail
         restart: always
+        healthcheck:
+            test: ["CMD", "traefik", "healthcheck"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
 
     # =========================
     # PostgreSQL database

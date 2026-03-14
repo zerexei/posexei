@@ -13,6 +13,7 @@ spec:
       labels:
         app: posexei-web
     spec:
+      serviceAccountName: posexei-app
       containers:
         - name: php
           image: posexei:latest

@@ -45,7 +45,6 @@ class UpsertSocialChannels implements ShouldQueue
             $externalIds = array_column($this->socialChannels, 'external_id');
             $socialChannels = SocialChannel::whereIn('external_id', $externalIds)->get();
 
-            \Illuminate\Support\Facades\Log::error('dd', [$socialChannelsMap]);
             $channelsToAttach = $socialChannels->mapWithKeys(fn ($socialChannel) => [
                 $socialChannel->id => [
                     'access_token' => $socialChannelsMap[$socialChannel->external_id]['access_token'],
