@@ -56,6 +56,14 @@ class SocialChannelData implements Arrayable
 
     public function __unserialize(array $data): void
     {
-        $this->fromArray($data);
+        $this->id = $data['id'] ?? null;
+        $this->channel_type = $data['channel_type'];
+        $this->external_id = $data['external_id'];
+        $this->name = $data['name'];
+        $this->status = SocialChannelStatus::from($data['status']);
+        $this->access_token = $data['access_token'] ?? null;
+        $this->refresh_token = $data['refresh_token'] ?? null;
+        $this->expires_at = $data['expires_at'] ?? null;
+        $this->metadata_json = $data['metadata_json'] ?? [];
     }
 }

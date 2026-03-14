@@ -46,6 +46,11 @@ class SocialAccountController extends Controller
         // Link social account
         $socialAccountData = $socialProvider->getAccount($request->access_token);
         $socialAccountData->user_id = $request->user()->id;
+
+        if (! $socialProvider->validateAccount($socialAccountData->access_token)) {
+            throw new \InvalidArgumentException('Invalid SocialAccount access token or insufficient permissions.');
+        }
+
         $socialAccount = app(LinkSocialAccount::class)($socialAccountData);
 
         // Sync channels in the background
