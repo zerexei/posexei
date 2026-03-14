@@ -35,20 +35,23 @@ spec:
               cpu: 500m
               memory: 512Mi
 
-        - name: nginx
-          image: nginx:alpine
+        - name: traefik
+          image: traefik:v3.6
+          args:
+            - "--api.insecure=true"
+            - "--providers.file.filename=/etc/traefik/traefik-config.yaml"
+            - "--entrypoints.web.address=:80"
           ports:
             - containerPort: 80
           volumeMounts:
-            - name: nginx-config
-              mountPath: /etc/nginx/conf.d/default.conf
-              subPath: default.conf
+            - name: traefik-config
+              mountPath: /etc/traefik
           resources:
             requests:
               cpu: 50m
               memory: 64Mi
 
       volumes:
-        - name: nginx-config
+        - name: traefik-config
           configMap:
-            name: posexei-nginx-config
+            name: posexei-traefik-config

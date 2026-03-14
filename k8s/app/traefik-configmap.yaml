@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: posexei-traefik-config
+  namespace: posexei
+data:
+  traefik-config.yaml: |
+    http:
+      routers:
+        laravel:
+          rule: "PathPrefix(`/`)"
+          service: laravel-app
+          entryPoints:
+            - web
+
+      services:
+        laravel-app:
+          # In Traefik v3, we can use the FastCGI capability
+          # However, a cleaner way for a sidecar is often just proxying.
+          # But PHP-FPM only speaks FastCGI.
+          # Traefik v3.0+ supports FastCGI natively.
+          fastCGI:
+            address: "127.0.0.1:9000"
+            index: "index.php"
+            root: "/var/www/public"
+            # Note: The 'root' here must match where PHP-FPM thinks the files are.
+    
+    # Static file serving in Traefik is handled via the file server.
+    # But usually, we want Traefik to try the file first, then fall back to PHP.
+    # This is slightly trickier in Traefik than Nginx.
+    # An alternative is to use Traefik to serve static files from a directory.
