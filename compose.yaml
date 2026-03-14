@@ -25,6 +25,7 @@ services:
             - sail
         depends_on:
             - pgsql
+            - redis
         labels:
             - 'traefik.enable=true'
             - 'traefik.http.routers.app.rule=Host(`app.localhost`)'
@@ -78,6 +79,17 @@ services:
                 - '${DB_USERNAME}'
             retries: 3
             timeout: 5s
+    # =========================
+    # Redis
+    # =========================
+    redis:
+        image: redis:8.6.0-alpine3.23
+        container_name: redis
+        ports:
+            - "6379:6379"
+        networks:
+            - sail
+        restart: unless-stopped
 
     # =========================
     # pgAdmin database management tool
@@ -110,6 +122,199 @@ services:
             - traefik
         ports:
             - '4040:4040'
+    # =========================
+    # MinIO (S3 Storage)
+    # =========================
+    minio:
+      image: minio/minio:latest
+      container_name: minio
+      command: server /data --console-address ":9001"
+      environment:
+        MINIO_ROOT_USER: ${MINIO_USER}
+        MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+      ports:
+        - "9000:9000"
+        - "9001:9001"
+      volumes:
+        - minio_data:/data
+      networks:
+        - sail
+      restart: unless-stopped
+      labels:
+        - "traefik.http.routers.minio-console.rule=Host(`minio.localhost`)"
+        - "traefik.http.routers.minio-console.entrypoints=web"
+        - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
+
+    # =========================
+    # Grafana - use template 1860
+    # =========================
+    grafana:
+        image: grafana/grafana
+        container_name: grafana
+        environment:
+            - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
+            - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+        volumes:
+            - ./grafana/data:/var/lib/grafana # dashboard, users and config
+        depends_on:
+            - prometheus
+            - loki
+            - tempo
+        networks:
+            - sail
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.grafana.rule=Host(`grafana.localhost`)"
+            - "traefik.http.routers.grafana.entrypoints=web"
+            - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+    # =========================
+    # Prometheus
+    # =========================
+    prometheus:
+        image: prom/prometheus
+        container_name: prometheus
+        volumes:
+            - ./prometheus/data:/data # persist TSDB data
+            - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+        networks:
+            - sail
+        depends_on:
+            - opentelemetry-collector
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.prometheus.rule=Host(`prometheus.localhost`)"
+            - "traefik.http.routers.prometheus.entrypoints=web"
+            - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+
+    # =========================
+    # Prometheus - Alertmanager
+    # =========================
+    alertmanager:
+        image: prom/alertmanager:latest
+        container_name: prometheus-alertmanager
+        volumes:
+            - ./observability/prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+        networks:
+            - sail
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.alertmanager.rule=Host(`alertmanager.localhost`)"
+            - "traefik.http.routers.alertmanager.entrypoints=web"
+            - "traefik.http.services.alertmanager.loadbalancer.server.port=9093"
+
+    # =========================
+    # Prometheus - Node Exporter
+    # =========================
+    node-exporter:
+        image: prom/node-exporter:latest
+        container_name: prometheus-node-exporter
+        command:
+            - "--path.procfs=/host/proc"
+            - "--path.sysfs=/host/sys"
+            - "--collector.filesystem.ignored-mount-points"
+            - "^/(sys|proc|dev|host|etc)($|/)"
+        ports:
+            - "9100:9100"
+        volumes:
+            - /proc:/host/proc:ro
+            - /sys:/host/sys:ro
+            - /:/rootfs:ro
+        networks:
+            - sail
+
+    # =========================
+    # Prometheus - Postgres Exporter
+    # =========================
+    postgres-exporter:
+        image: bitnami/postgres-exporter:latest
+        container_name: prometheus-postgres-exporter
+        environment:
+            DATA_SOURCE_NAME: postgresql://${DB_USERNAME}:${DB_PASSWORD}@pgsql:5432/${DB_DATABASE}?sslmode=disable
+        ports:
+            - "9186:9186"
+        networks:
+            - sail
+        depends_on:
+            - pgsql
+
+    # =========================
+    # Prometheus - Redis Exporter
+    # =========================
+    redis-exporter:
+        image: bitnami/redis-exporter:latest
+        container_name: prometheus-redis-exporter
+        environment:
+            - REDIS_ADDR=redis:${REDIS_PORT}
+            - REDIS_PASSWORD=
+        ports:
+            - "9120:9121"
+        networks:
+            - sail
+        depends_on:
+            - redis
+
+    # =========================
+    # Loki
+    # =========================
+    loki:
+        image: grafana/loki:2.9.1
+        container_name: grafana-loki
+        command: -config.file=/etc/loki/local-config.yml
+        volumes:
+            - ./observability/loki/loki-config.yml:/etc/loki/local-config.yml
+        ports:
+            - "3100:3100"
+        networks:
+            - sail
+        depends_on:
+            - minio
+
+    # =========================
+    # Tempo
+    # =========================
+    tempo:
+        container_name: grafana-tempo
+        image: grafana/tempo:2.10.0
+        command: [-config.file=/etc/tempo/config.yml]
+        environment:
+            - MINIO_USER=${MINIO_USER}
+            - MINIO_PASSWORD=${MINIO_PASSWORD}
+        volumes:
+            - ./observability/tempo/tempo-config.yml:/etc/tempo/config.yml
+        ports:
+            - "3200:3200"
+        networks:
+            - sail
+        depends_on:
+            - minio
+
+    # =========================
+    # OpenTelemetry Collector
+    # =========================
+    opentelemetry-collector:
+        container_name: opentelemetry-collector
+        image: otel/opentelemetry-collector
+        command: --config=/etc/otelcol/config.yml
+        volumes:
+            - ./observability/opentelemetry/otel-collector-config.yml:/etc/otelcol/config.yml
+        ports:
+            - 8889:8889 # Prometheus exporter metrics
+        networks:
+            - sail
+
+    # # =========================
+    # # k6 - Load Testing
+    # # =========================
+    # k6:
+    #     image: grafana/k6:latest
+    #     entrypoint: ["tail", "-f", "/dev/null"]
+    #     volumes:
+    #         - ./scripts:/scripts
+    #     networks:
+    #         - sail
+    #     depends_on:
+    #         - laravel.test
 
 networks:
     sail:
@@ -118,4 +323,8 @@ volumes:
     sail-pgsql:
         driver: local
     sail-pgadmin:
+        driver: local
+    minio_data:
+        driver: local
+    sail-redis:
         driver: local
