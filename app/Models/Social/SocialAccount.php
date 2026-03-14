@@ -46,6 +46,7 @@ class SocialAccount extends Model
             'access_token',
             'refresh_token',
             'expires_at',
+            'status',
         ]);
     }
 }

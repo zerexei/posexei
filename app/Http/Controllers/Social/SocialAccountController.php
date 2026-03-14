@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Social;
 use App\Actions\Social\LinkSocialAccount;
 use App\Actions\Social\SyncSocialChannels;
 use App\Data\Social\SocialChannelData;
+use App\Enums\Social\SocialChannelStatus;
 use App\Enums\Social\SocialProvider;
 use App\Http\Controllers\Controller;
 use App\Services\Social\SocialProviderManager;
@@ -26,6 +27,7 @@ class SocialAccountController extends Controller
                 channel_type: $socialChannel->channel_type,
                 external_id: $socialChannel->external_id,
                 name: $socialChannel->name,
+                status: SocialChannelStatus::from($socialChannel->pivot->status),
                 metadata_json: $socialChannel->metadata_json,
             )),
         ]);

@@ -28,7 +28,11 @@ class SocialChannel extends Model
 
     public function accounts(): BelongsToMany
     {
-        return $this->belongsToMany(SocialAccount::class, 'social_account_channels')
-            ->withPivot('access_token');
+        return $this->belongsToMany(SocialAccount::class)->using(SocialAccountSocialChannel::class)->withPivot([
+            'access_token',
+            'refresh_token',
+            'expires_at',
+            'status',
+        ]);
     }
 }
