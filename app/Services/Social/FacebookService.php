@@ -4,6 +4,7 @@ namespace App\Services\Social;
 
 use App\Data\Social\SocialAccountData;
 use App\Data\Social\SocialChannelData;
+use App\Enums\Social\SocialChannelStatus;
 use App\Enums\Social\SocialProvider;
 use App\Services\Social\SocialProvider as ISocialProvider;
 use Illuminate\Support\Facades\Http;
@@ -46,6 +47,7 @@ class FacebookService implements ISocialProvider
                     channel_type: self::CHANNEL_TYPE,
                     external_id: $account['id'],
                     name: $account['name'],
+                    status: SocialChannelStatus::PROCESSING,
                     access_token: $account['access_token'] ?? null,
                     refresh_token: $account['refresh_token'] ?? null,
                     expires_at: $account['expires_at'] ?? null,
@@ -63,6 +65,38 @@ class FacebookService implements ISocialProvider
 
         if (! empty($chunk)) {
             yield $chunk;
+        }
+    }
+
+    public function validateAccount(string $accessToken): bool
+    {
+        try {
+            $response = Http::get(self::BASE_URL.'/me/permissions', [
+                'access_token' => $accessToken,
+            ])->throw();
+
+            $permissions = collect($response->json('data', []))->pluck('status', 'permission');
+
+            return $permissions->get('pages_show_list') === 'granted'
+                && $permissions->get('pages_manage_posts') === 'granted';
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    public function validateChannel(string $token, string $externalId): bool
+    {
+        try {
+            $response = Http::get(self::BASE_URL.'/'.$externalId, [
+                'access_token' => $token,
+                'fields' => 'tasks',
+            ])->throw();
+
+            $tasks = collect($response->json('tasks', []));
+
+            return $tasks->contains('CREATE_CONTENT') || $tasks->contains('MANAGE');
+        } catch (\Exception $e) {
+            return false;
         }
     }
 

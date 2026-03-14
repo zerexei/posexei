@@ -3,10 +3,10 @@
 namespace App\Services\Social;
 
 use App\Data\Social\SocialAccountData;
-use App\Enums\Social\SocialProvider;
-use Illuminate\Support\Facades\Http;
-
 use App\Data\Social\SocialChannelData;
+use App\Enums\Social\SocialChannelStatus;
+use App\Enums\Social\SocialProvider as SocialProviderEnum;
+use Illuminate\Support\Facades\Http;
 
 class ThreadsService implements SocialProvider
 {
@@ -24,7 +24,7 @@ class ThreadsService implements SocialProvider
         return new SocialAccountData(
             id: null,
             user_id: null,
-            provider: SocialProvider::THREADS,
+            provider: SocialProviderEnum::THREADS,
             external_user_id: $response->json('id'),
             access_token: $userAccessToken,
             refresh_token: $userAccessToken,
@@ -50,6 +50,7 @@ class ThreadsService implements SocialProvider
                     channel_type: self::CHANNEL_TYPE,
                     external_id: $account['id'],
                     name: $account['name'],
+                    status: SocialChannelStatus::PROCESSING,
                 );
 
                 if (count($chunk) >= $chunkSize) {
@@ -64,6 +65,33 @@ class ThreadsService implements SocialProvider
 
         if (! empty($chunk)) {
             yield $chunk;
+        }
+    }
+
+    public function validateAccount(string $accessToken): bool
+    {
+        try {
+            Http::get(self::BASE_URL.'/me', [
+                'access_token' => $accessToken,
+            ])->throw();
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    public function validateChannel(string $token, string $externalId): bool
+    {
+        try {
+            $response = Http::get(self::BASE_URL.'/'.$externalId, [
+                'access_token' => $token,
+                'fields' => 'id',
+            ])->throw();
+
+            return (bool) $response->json('id');
+        } catch (\Exception $e) {
+            return false;
         }
     }
 

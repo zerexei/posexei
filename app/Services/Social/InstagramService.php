@@ -4,7 +4,8 @@ namespace App\Services\Social;
 
 use App\Data\Social\SocialAccountData;
 use App\Data\Social\SocialChannelData;
-use App\Enums\Social\SocialProvider;
+use App\Enums\Social\SocialChannelStatus;
+use App\Enums\Social\SocialProvider as SocialProviderEnum;
 use Illuminate\Support\Facades\Http;
 
 class InstagramService implements SocialProvider
@@ -20,8 +21,9 @@ class InstagramService implements SocialProvider
         ])->throw();
 
         return new SocialAccountData(
+            id: null,
             user_id: null,
-            provider: SocialProvider::FACEBOOK,
+            provider: SocialProviderEnum::FACEBOOK,
             external_user_id: $response->json('id'),
             access_token: $userAccessToken,
             refresh_token: $userAccessToken,
@@ -47,6 +49,7 @@ class InstagramService implements SocialProvider
                     channel_type: self::CHANNEL_TYPE,
                     external_id: $account['instagram_business_account']['id'],
                     name: $account['instagram_business_account']['name'],
+                    status: SocialChannelStatus::PROCESSING,
                 );
 
                 if (count($chunk) >= $chunkSize) {
@@ -61,6 +64,33 @@ class InstagramService implements SocialProvider
 
         if (! empty($chunk)) {
             yield $chunk;
+        }
+    }
+
+    public function validateAccount(string $accessToken): bool
+    {
+        try {
+            Http::get(self::BASE_URL.'/me', [
+                'access_token' => $accessToken,
+            ])->throw();
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    public function validateChannel(string $token, string $externalId): bool
+    {
+        try {
+            $response = Http::get(self::BASE_URL.'/'.$externalId, [
+                'access_token' => $token,
+                'fields' => 'id',
+            ])->throw();
+
+            return (bool) $response->json('id');
+        } catch (\Exception $e) {
+            return false;
         }
     }
 
