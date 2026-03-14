@@ -25,3 +25,10 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Observability data
+/grafana/data
+/prometheus/data
+/loki
+/tempo
+/*.log
