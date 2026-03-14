@@ -49,17 +49,15 @@ const viewMode = ref<'grid' | 'list'>('grid');
 const searchQuery = ref('');
 const activePlatformFilter = ref<string | null>(null);
 
-const posts = ref([
-    { id: 1, title: 'Summer Collection 2026', type: 'image', status: 'published', platforms: ['instagram', 'facebook'], created_at: '2h ago', engagement: '2.4k', reach: '12.5k', content: 'Our new summer collection is finally here! #summer #fashion' },
-    { id: 2, title: 'Platform Demo Video', type: 'video', status: 'scheduled', platforms: ['youtube', 'linkedin'], created_at: 'Tomorrow, 9am', engagement: '-', reach: '-', content: 'Check out how easy it is to manage your social media with posexei.' },
-    { id: 3, title: 'Hiring: Senior Product Designer', type: 'text', status: 'draft', platforms: ['twitter', 'linkedin'], created_at: '1d ago', engagement: '-', reach: '-', content: 'We are looking for a Senior Product Designer to join our team!' },
-    { id: 4, title: 'Weekly Recap - Feb Week 4', type: 'image', status: 'failed', platforms: ['instagram'], created_at: '2d ago', engagement: '-', reach: '-', content: 'A quick look back at what we achieved this week.' },
-    { id: 5, title: 'New Feature Announcement', type: 'image', status: 'published', platforms: ['twitter', 'instagram'], created_at: '3d ago', engagement: '1.1k', reach: '5.2k', content: 'Exciting news! We just launched automated scheduling for LinkedIn.' },
-]);
+const props = defineProps<{
+    posts: any[];
+}>();
 
+const posts = computed(() => props.posts);
 const filteredPosts = computed(() => {
     return posts.value.filter(post => {
-        const matchesSearch = post.title.toLowerCase().includes(searchQuery.value.toLowerCase());
+        const title = post.title || '';
+        const matchesSearch = title.toLowerCase().includes(searchQuery.value.toLowerCase());
         const matchesPlatform = !activePlatformFilter.value || post.platforms.includes(activePlatformFilter.value);
         return matchesSearch && matchesPlatform;
     });

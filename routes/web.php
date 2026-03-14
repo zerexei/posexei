@@ -37,6 +37,7 @@ Route::get('dashboard', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('posts', [PostController::class, 'index'])->name('posts.index');
+    Route::post('posts', [PostController::class, 'store'])->name('posts.store');
     Route::get('posts/create', [PostController::class, 'create'])->name('posts.create');
     Route::get('posts/analytics', [PostController::class, 'analytics'])->name('posts.analytics');
     Route::get('posts/{id}', [PostController::class, 'show'])->name('posts.show');

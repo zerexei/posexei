@@ -19,7 +19,10 @@ import DialogDescription from '@/components/ui/dialog/DialogDescription.vue';
 import DialogFooter from '@/components/ui/dialog/DialogFooter.vue';
 import DialogClose from '@/components/ui/dialog/DialogClose.vue';
 import DialogTrigger from '@/components/ui/dialog/DialogTrigger.vue';
+import PostController from '@/actions/App/Http/Controllers/PostController';
+import { Form } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import { posts } from '@/routes';
 import { 
     Image as ImageIcon, 
     Video, 
@@ -68,9 +71,6 @@ const breadcrumbs = [
     { title: 'Create Post', href: '/posts/create' },
 ];
 
-const postType = ref('text');
-const title = ref('');
-const content = ref('');
 const tags = ref<string[]>([]);
 const newTag = ref('');
 
@@ -110,6 +110,9 @@ const platforms = computed(() => {
 });
 
 const selectedPlatforms = ref<string[]>([]);
+const content = ref('');
+const title = ref('');
+const postType = ref('text');
 
 const togglePlatform = (id: string) => {
     if (selectedPlatforms.value.includes(id)) {
@@ -137,7 +140,7 @@ const getValidationWarning = (pId: string) => {
     if (!platform) return null;
     
     if (platform.provider === 'twitter' && charCount.value > 280) return 'X has a 280 character limit.';
-    if (platform.provider === 'instagram' && postType.value === 'text') return 'Instagram requires media.';
+    if (platform.provider === 'instagram' && !content.value) return 'Instagram requires content.';
     return null;
 };
 
@@ -151,15 +154,6 @@ const openPreview = () => {
 };
 
 const showSuccessModal = ref(false);
-const isPublishing = ref(false);
-
-const publishPost = () => {
-    isPublishing.value = true;
-    setTimeout(() => {
-        isPublishing.value = false;
-        showSuccessModal.value = true;
-    }, 1500);
-};
 
 const getActivePreviewProvider = computed(() => {
     const p = platforms.value.find(p => p.id === activePreviewTab.value);
@@ -171,7 +165,8 @@ const getActivePreviewProvider = computed(() => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <Head title="Create Social Post" />
 
-        <div class="flex flex-col gap-6 p-6 max-w-7xl w-full mx-auto h-[calc(100vh-64px)] overflow-hidden">
+        <Form v-bind="PostController.store.form()" @success="showSuccessModal = true" v-slot="{ processing }">
+            <div class="flex flex-col gap-6 p-6 max-w-7xl w-full mx-auto h-[calc(100vh-64px)] overflow-hidden">
             <!-- Header -->
             <div class="flex items-center justify-between shrink-0">
                 <div class="space-y-1 text-foreground">
@@ -238,7 +233,7 @@ const getActivePreviewProvider = computed(() => {
                                             <MoreHorizontal class="w-5 h-5 text-muted-foreground" />
                                         </div>
                                         <div class="px-4 pb-3">
-                                            <p class="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{{ content || 'What’s on your mind?' }}</p>
+                                            <p class="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">{{ content || 'No content yet...' }}</p>
                                         </div>
                                         <div v-if="postType !== 'text'" class="aspect-video bg-muted border-y border-border/50 flex items-center justify-center">
                                             <ImageIcon v-if="postType === 'image'" class="w-12 h-12 text-muted-foreground/20" />
@@ -284,7 +279,16 @@ const getActivePreviewProvider = computed(() => {
                                             <MoreHorizontal class="w-5 h-5 text-muted-foreground" />
                                         </div>
                                         <div class="px-4 pb-4">
-                                            <p class="text-[13px] leading-relaxed whitespace-pre-wrap text-foreground">{{ content || 'Share your professional updates...' }}</p>
+                                            <p class="text-sm border-l-4 border-primary/20 pl-4 py-1 text-foreground/80 italic">{{ content }}</p>
+                                            <div v-if="postType === 'link'" class="mt-4 rounded-xl border border-border overflow-hidden bg-muted/30">
+                                                <div class="aspect-video bg-muted flex items-center justify-center">
+                                                    <Link2 class="w-12 h-12 text-muted-foreground/20" />
+                                                </div>
+                                                <div class="p-4 space-y-1">
+                                                    <p class="font-bold text-sm text-foreground">Example Link Title</p>
+                                                    <p class="text-xs text-muted-foreground">example.com/article</p>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div v-if="postType !== 'text'" class="aspect-video bg-muted flex items-center justify-center border-y border-border/50">
                                             <ImageIcon v-if="postType === 'image'" class="w-12 h-12 text-muted-foreground/20" />
@@ -330,8 +334,8 @@ const getActivePreviewProvider = computed(() => {
                         </DialogContent>
                     </Dialog>
 
-                    <Button @click="publishPost" :disabled="isPublishing || selectedPlatforms.length === 0" class="rounded-xl px-8 h-10 font-bold shadow-sm shadow-primary/20">
-                        <span v-if="isPublishing" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2 text-foreground"></span>
+                    <Button type="submit" :disabled="processing || selectedPlatforms.length === 0" class="rounded-xl px-8 h-10 font-bold shadow-sm shadow-primary/20">
+                        <span v-if="processing" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2 text-foreground"></span>
                         Publish
                     </Button>
                 </div>
@@ -346,7 +350,8 @@ const getActivePreviewProvider = computed(() => {
                             <div class="space-y-2 shrink-0">
                                 <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Internal Reference</Label>
                                 <Input 
-                                    v-model="title" 
+                                    v-model="title"
+                                    name="title"
                                     placeholder="Campaign or post title..." 
                                     class="text-lg font-bold py-6 rounded-xl border-0 bg-muted/30 focus-visible:ring-2 focus-visible:ring-primary/20 text-foreground px-4 placeholder:text-muted-foreground/30"
                                 />
@@ -370,6 +375,7 @@ const getActivePreviewProvider = computed(() => {
                                         >
                                             <component :is="type.icon" class="w-3.5 h-3.5" /> {{ type.label }}
                                         </button>
+                                        <input type="hidden" name="post_type" :value="postType">
                                     </div>
 
                                     <Button variant="ghost" size="sm" class="text-[10px] text-primary font-black uppercase tracking-widest bg-primary/5 hover:bg-primary/10 rounded-full h-7 px-3">
@@ -385,7 +391,8 @@ const getActivePreviewProvider = computed(() => {
                                         <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:bg-card"><Hash class="w-4 h-4" /></Button>
                                     </div>
                                     <Textarea 
-                                        v-model="content" 
+                                        v-model="content"
+                                        name="content"
                                         placeholder="What do you want to share?" 
                                         class="border-0 focus-visible:ring-0 rounded-none min-h-[200px] resize-none p-6 text-base bg-transparent text-foreground placeholder:text-muted-foreground/50 leading-relaxed flex-1 min-h-0"
                                     />
@@ -460,10 +467,11 @@ const getActivePreviewProvider = computed(() => {
                                             <p class="text-[10px] text-muted-foreground font-medium truncate uppercase tracking-tighter mt-0.5 text-foreground">{{ platform.account }}</p>
                                         </div>
                                     </div>
-                                    <div v-if="selectedPlatforms.includes(platform.id)" :class="cn('rounded-full p-1 shadow-none ring-2 ring-card shrink-0', platform.color.replace('text-', 'bg-').replace('600', '500').replace('700', '600'))">
-                                        <Check class="w-3.5 h-3.5 text-white stroke-[3.5px]" />
-                                    </div>
-                                </button>
+                                        <div v-if="selectedPlatforms.includes(platform.id)" :class="cn('rounded-full p-1 shadow-none ring-2 ring-card shrink-0', platform.color.replace('text-', 'bg-').replace('600', '500').replace('700', '600'))">
+                                            <Check class="w-3.5 h-3.5 text-white stroke-[3.5px]" />
+                                        </div>
+                                        <input v-if="selectedPlatforms.includes(platform.id)" type="hidden" name="channel_ids[]" :value="platform.id">
+                                    </button>
                                 
                                 <div class="pt-4 px-2">
                                     <Link href="/settings/connections">
@@ -491,7 +499,8 @@ const getActivePreviewProvider = computed(() => {
                     </Card>
                 </div>
             </div>
-        </div>
+            </div>
+        </Form>
 
         <!-- Success Modal -->
         <div v-if="showSuccessModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 text-foreground">
