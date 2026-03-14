@@ -154,7 +154,7 @@ services:
       labels:
         - "traefik.http.routers.minio-console.rule=Host(`minio.localhost`)"
         - "traefik.http.routers.minio-console.entrypoints=web"
-        - "traefik.http.services.minio-console.loadbalancer.server.port=9091"
+        - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
 
     # =========================
     # Grafana - Visualizations
