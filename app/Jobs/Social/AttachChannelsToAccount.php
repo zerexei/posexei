@@ -24,12 +24,22 @@ class AttachChannelsToAccount implements ShouldQueue
         $socialAccount = SocialAccount::find($this->socialAccountId);
 
         if (! $socialAccount) {
-            Log::warning("AttachChannelsToAccount: SocialAccount [{$this->socialAccountId}] not found. Job might be stale.");
+            Log::warning("AttachChannelsToAccount failed for SocialAccount [{$this->socialAccountId}]: SocialAccount not found. Job might be stale.");
 
             return;
         }
 
-        $socialAccount->channels()->syncWithoutDetaching($this->socialChannels);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($socialAccount) {
+            $channelsToSync = [];
+            foreach ($this->socialChannels as $id => $pivotData) {
+                if (($pivotData['status'] ?? null) !== \App\Enums\Social\SocialChannelStatus::DISCONNECTED->value) {
+                    $pivotData['status'] = \App\Enums\Social\SocialChannelStatus::CONNECTED->value;
+                }
+                $channelsToSync[$id] = $pivotData;
+            }
+
+            $socialAccount->socialChannels()->syncWithoutDetaching($channelsToSync);
+        });
     }
 
     public function failed(\Throwable $exception): void
