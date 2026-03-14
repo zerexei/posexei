@@ -143,19 +143,21 @@ services:
       labels:
         - "traefik.http.routers.minio-console.rule=Host(`minio.localhost`)"
         - "traefik.http.routers.minio-console.entrypoints=web"
-        - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
+        - "traefik.http.services.minio-console.loadbalancer.server.port=9091"
 
     # =========================
-    # Grafana - use template 1860
+    # Grafana - Visualizations
     # =========================
     grafana:
-        image: grafana/grafana
+        image: grafana/grafana:latest
         container_name: grafana
         environment:
             - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
             - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
         volumes:
-            - ./grafana/data:/var/lib/grafana # dashboard, users and config
+            - './grafana/provisioning:/etc/grafana/provisioning'
+            - './grafana/dashboards:/var/lib/grafana/dashboards'
+            - 'sail-grafana:/var/lib/grafana'
         depends_on:
             - prometheus
             - loki
@@ -169,14 +171,21 @@ services:
             - "traefik.http.services.grafana.loadbalancer.server.port=3000"
 
     # =========================
-    # Prometheus
+    # Prometheus - Metrics Storage
     # =========================
     prometheus:
-        image: prom/prometheus
+        image: prom/prometheus:latest
         container_name: prometheus
+        command:
+            - '--config.file=/etc/prometheus/prometheus.yml'
+            - '--storage.tsdb.path=/prometheus'
+            - '--web.console.libraries=/etc/prometheus/console_libraries'
+            - '--web.console.templates=/etc/prometheus/consoles'
+            - '--web.enable-lifecycle'
         volumes:
-            - ./prometheus/data:/data # persist TSDB data
-            - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+            - './observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro'
+            - './observability/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro'
+            - 'sail-prometheus:/prometheus'
         networks:
             - sail
         depends_on:
@@ -188,13 +197,13 @@ services:
             - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
 
     # =========================
-    # Prometheus - Alertmanager
+    # Alertmanager - Alerting
     # =========================
     alertmanager:
         image: prom/alertmanager:latest
-        container_name: prometheus-alertmanager
+        container_name: alertmanager
         volumes:
-            - ./observability/prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+            - './observability/prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro'
         networks:
             - sail
         labels:
@@ -204,65 +213,15 @@ services:
             - "traefik.http.services.alertmanager.loadbalancer.server.port=9093"
 
     # =========================
-    # Prometheus - Node Exporter
-    # =========================
-    node-exporter:
-        image: prom/node-exporter:latest
-        container_name: prometheus-node-exporter
-        command:
-            - "--path.procfs=/host/proc"
-            - "--path.sysfs=/host/sys"
-            - "--collector.filesystem.ignored-mount-points"
-            - "^/(sys|proc|dev|host|etc)($|/)"
-        ports:
-            - "9100:9100"
-        volumes:
-            - /proc:/host/proc:ro
-            - /sys:/host/sys:ro
-            - /:/rootfs:ro
-        networks:
-            - sail
-
-    # =========================
-    # Prometheus - Postgres Exporter
-    # =========================
-    postgres-exporter:
-        image: bitnami/postgres-exporter:latest
-        container_name: prometheus-postgres-exporter
-        environment:
-            DATA_SOURCE_NAME: postgresql://${DB_USERNAME}:${DB_PASSWORD}@pgsql:5432/${DB_DATABASE}?sslmode=disable
-        ports:
-            - "9186:9186"
-        networks:
-            - sail
-        depends_on:
-            - pgsql
-
-    # =========================
-    # Prometheus - Redis Exporter
-    # =========================
-    redis-exporter:
-        image: bitnami/redis-exporter:latest
-        container_name: prometheus-redis-exporter
-        environment:
-            - REDIS_ADDR=redis:${REDIS_PORT}
-            - REDIS_PASSWORD=
-        ports:
-            - "9120:9121"
-        networks:
-            - sail
-        depends_on:
-            - redis
-
-    # =========================
-    # Loki
+    # Loki - Logs Storage
     # =========================
     loki:
-        image: grafana/loki:2.9.1
-        container_name: grafana-loki
+        image: grafana/loki:latest
+        container_name: loki
         command: -config.file=/etc/loki/local-config.yml
         volumes:
-            - ./observability/loki/loki-config.yml:/etc/loki/local-config.yml
+            - './observability/loki/loki-config.yml:/etc/loki/local-config.yml:ro'
+            - 'sail-loki:/loki'
         ports:
             - "3100:3100"
         networks:
@@ -271,19 +230,31 @@ services:
             - minio
 
     # =========================
-    # Tempo
+    # Promtail - Log Collector
+    # =========================
+    promtail:
+        image: grafana/promtail:latest
+        container_name: promtail
+        volumes:
+            - './observability/promtail/promtail.yml:/etc/promtail/config.yml:ro'
+            - '/var/lib/docker/containers:/var/lib/docker/containers:ro'
+            - '/var/run/docker.sock:/var/run/docker.sock:ro'
+        command: -config.file=/etc/promtail/config.yml
+        networks:
+            - sail
+        depends_on:
+            - loki
+
+    # =========================
+    # Tempo - Traces Storage
     # =========================
     tempo:
-        container_name: grafana-tempo
-        image: grafana/tempo:2.10.0
-        command: [-config.file=/etc/tempo/config.yml]
-        environment:
-            - MINIO_USER=${MINIO_USER}
-            - MINIO_PASSWORD=${MINIO_PASSWORD}
+        image: grafana/tempo:latest
+        container_name: tempo
+        command: [ "-config.file=/etc/tempo.yaml" ]
         volumes:
-            - ./observability/tempo/tempo-config.yml:/etc/tempo/config.yml
-        ports:
-            - "3200:3200"
+            - './observability/tempo/tempo-config.yml:/etc/tempo.yaml:ro'
+            - 'sail-tempo:/var/tempo'
         networks:
             - sail
         depends_on:
@@ -293,38 +264,88 @@ services:
     # OpenTelemetry Collector
     # =========================
     opentelemetry-collector:
-        container_name: opentelemetry-collector
-        image: otel/opentelemetry-collector
-        command: --config=/etc/otelcol/config.yml
+        image: otel/opentelemetry-collector-contrib:latest
+        container_name: otel-collector
+        command: ["--config=/etc/otel-collector-config.yaml"]
         volumes:
-            - ./observability/opentelemetry/otel-collector-config.yml:/etc/otelcol/config.yml
-        ports:
-            - 8889:8889 # Prometheus exporter metrics
+            - './observability/opentelemetry/otel-collector-config.yml:/etc/otel-collector-config.yaml:ro'
+        networks:
+            - sail
+        depends_on:
+            - loki
+            - tempo
+
+    # =========================
+    # Exporters
+    # =========================
+    node-exporter:
+        image: prom/node-exporter:latest
+        container_name: node-exporter
+        restart: unless-stopped
+        volumes:
+            - /proc:/host/proc:ro
+            - /sys:/host/sys:ro
+            - /:/rootfs:ro
+        command:
+            - '--path.procfs=/host/proc'
+            - '--path.sysfs=/host/sys'
+            - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
         networks:
             - sail
 
-    # # =========================
-    # # k6 - Load Testing
-    # # =========================
-    # k6:
-    #     image: grafana/k6:latest
-    #     entrypoint: ["tail", "-f", "/dev/null"]
-    #     volumes:
-    #         - ./scripts:/scripts
-    #     networks:
-    #         - sail
-    #     depends_on:
-    #         - laravel.test
+    postgres-exporter:
+        image: bitnami/postgres-exporter:latest
+        container_name: postgres-exporter
+        environment:
+            - DATA_SOURCE_NAME=postgresql://${DB_USERNAME}:${DB_PASSWORD}@pgsql:5432/${DB_DATABASE}?sslmode=disable
+        networks:
+            - sail
+        depends_on:
+            - pgsql
+
+    redis-exporter:
+        image: bitnami/redis-exporter:latest
+        container_name: redis-exporter
+        environment:
+            - REDIS_ADDR=redis:6379
+        networks:
+            - sail
+        depends_on:
+            - redis
+
+    cadvisor:
+        image: gcr.io/cadvisor/cadvisor:latest
+        container_name: cadvisor
+        volumes:
+            - /:/rootfs:ro
+            - /var/run:/var/run:ro
+            - /sys:/sys:ro
+            - /var/lib/docker/:/var/lib/docker:ro
+            - /dev/disk/:/dev/disk:ro
+        devices:
+            - /dev/kmsg
+        privileged: true
+        networks:
+            - sail
 
 networks:
     sail:
         driver: bridge
+
 volumes:
     sail-pgsql:
         driver: local
     sail-pgadmin:
         driver: local
-    minio_data:
-        driver: local
     sail-redis:
+        driver: local
+    sail-grafana:
+        driver: local
+    sail-prometheus:
+        driver: local
+    sail-loki:
+        driver: local
+    sail-tempo:
+        driver: local
+    minio_data:
         driver: local
