@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AccountController from '@/actions/App/Http/Controllers/Settings/AccountController';
+import SocialAccountController from '@/actions/App/Http/Controllers/Social/SocialAccountController';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import Badge from '@/components/ui/badge/Badge.vue';
 import Button from '@/components/ui/button/Button.vue';
@@ -206,7 +206,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                         </DialogHeader>
 
                         <Form
-                            v-bind="AccountController.store.post()"
+                            v-bind="SocialAccountController.store.post()"
                             :reset-on-success="['access_token']"
                             @success="handleSuccess"
                             @error="handleError"

@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Settings\AccountController;
+use App\Http\Controllers\Social\SocialAccountController;
 use App\Http\Controllers\Settings\BillingController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -24,7 +24,7 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('settings/Appearance');
     })->name('appearance');
 
-    Route::get('settings/connections', [AccountController::class, 'edit'])->name('connections.edit');
-    Route::post('settings/connections', [AccountController::class, 'store'])->name('connections.store');
+    Route::get('settings/connections', [SocialAccountController::class, 'edit'])->name('connections.edit');
+    Route::post('settings/connections', [SocialAccountController::class, 'store'])->name('connections.store');
     Route::get('settings/billing', [BillingController::class, 'edit'])->name('billing.edit');
 });
