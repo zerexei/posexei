@@ -15,7 +15,9 @@ use OpenTelemetry\SDK\Trace\SpanProcessor\BatchSpanProcessor;
 use OpenTelemetry\SDK\Trace\TracerProvider;
 use OpenTelemetry\SDK\Trace\TracerProviderInterface;
 use OpenTelemetry\SemConv\ResourceAttributes;
-use OpenTelemetry\Contrib\OTLP\SpanExporter;
+use OpenTelemetry\Contrib\Otlp\SpanExporter;
+use OpenTelemetry\API\Common\Time\SystemClock;
+use OpenTelemetry\SDK\Sdk;
 
 class TelemetryServiceProvider extends ServiceProvider
 {
@@ -31,16 +33,15 @@ class TelemetryServiceProvider extends ServiceProvider
                 (new PsrTransportFactory())->create($endpoint . '/v1/traces', 'application/x-protobuf')
             );
 
-            $resource = ResourceInfoFactory::merge(
-                ResourceInfoFactory::defaultResource(),
+            $resource = ResourceInfoFactory::defaultResource()->merge(
                 ResourceInfo::create(Attributes::create([
                     ResourceAttributes::SERVICE_NAME => env('OTEL_SERVICE_NAME', 'laravel-app'),
-                    ResourceAttributes::DEPLOYMENT_ENVIRONMENT => app()->environment(),
+                    ResourceAttributes::DEPLOYMENT_ENVIRONMENT_NAME => app()->environment(),
                 ]))
             );
 
             $tracerProvider = TracerProvider::builder()
-                ->addSpanProcessor(new BatchSpanProcessor($exporter))
+                ->addSpanProcessor(new BatchSpanProcessor($exporter, SystemClock::create()))
                 ->setResource($resource)
                 ->setSampler(new AlwaysOnSampler())
                 ->build();
@@ -49,16 +50,15 @@ class TelemetryServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * Bootstrap services.
-     */
     public function boot(): void
     {
         /** @var TracerProviderInterface $tracerProvider */
         $tracerProvider = $this->app->make(TracerProviderInterface::class);
 
-        Globals::setTracerProvider($tracerProvider);
-        Globals::setPropagator(TraceContextPropagator::getInstance());
+        Sdk::builder()
+            ->setTracerProvider($tracerProvider)
+            ->setPropagator(TraceContextPropagator::getInstance())
+            ->buildAndRegisterGlobal();
 
         $this->instrumentDatabase();
         $this->instrumentQueue();
@@ -103,14 +103,19 @@ class TelemetryServiceProvider extends ServiceProvider
 
     protected function instrumentRedis(): void
     {
-        \Illuminate\Support\Facades\Redis::enableEvents();
-        \Illuminate\Support\Facades\Redis::listen(function ($event) {
-            $tracer = Globals::tracerProvider()->getTracer('laravel-redis');
-            $span = $tracer->spanBuilder('redis ' . $event->command)
-                ->setAttribute('db.system', 'redis')
-                ->setAttribute('db.statement', $event->command)
-                ->startSpan();
-            $span->end();
-        });
+        try {
+            \Illuminate\Support\Facades\Redis::enableEvents();
+            \Illuminate\Support\Facades\Redis::listen(function ($event) {
+                $tracer = Globals::tracerProvider()->getTracer('laravel-redis');
+                $span = $tracer->spanBuilder('redis ' . $event->command)
+                    ->setAttribute('db.system', 'redis')
+                    ->setAttribute('db.statement', $event->command)
+                    ->startSpan();
+                $span->end();
+            });
+        } catch (\Throwable $e) {
+            // Redis might not be available during boot
+            \Illuminate\Support\Facades\Log::warning('Redis telemetry instrumentation failed: ' . $e->getMessage());
+        }
     }
 }

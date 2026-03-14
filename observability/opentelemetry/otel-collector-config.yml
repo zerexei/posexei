@@ -16,9 +16,9 @@ processors:
 exporters:
   prometheus:
     endpoint: "0.0.0.0:8889"
-  loki:
-    endpoint: "http://loki:3100/loki/api/v1/push"
-  otlp:
+  otlphttp/loki:
+    endpoint: "http://loki:3100/otlp"
+  otlp/tempo:
     endpoint: "tempo:4317"
     tls:
       insecure: true
@@ -32,11 +32,11 @@ service:
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [loki]
+      exporters: [otlphttp/loki]
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlp]
+      exporters: [otlp/tempo]
   telemetry:
     metrics:
-      address: 0.0.0.0:8888
+      level: basic
