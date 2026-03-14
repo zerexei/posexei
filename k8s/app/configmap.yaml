@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: posexei-config
+  namespace: posexei
+data:
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_URL: "https://posexei.example.com"
+  LOG_CHANNEL: stderr
+  DB_CONNECTION: pgsql
+  DB_PORT: "5432"
+  CACHE_STORE: redis
+  REDIS_PORT: "6379"
+  OTEL_SERVICE_NAME: laravel-app
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.posexei.svc.cluster.local:4318"

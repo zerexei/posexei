@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: posexei-web
+  namespace: posexei
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: posexei-web
+  template:
+    metadata:
+      labels:
+        app: posexei-web
+    spec:
+      containers:
+        - name: php
+          image: posexei:latest
+          ports:
+            - containerPort: 9000
+          envFrom:
+            - configMapRef:
+                name: posexei-config
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: posexei-secrets
+                  key: db_password
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: posexei-nginx-config

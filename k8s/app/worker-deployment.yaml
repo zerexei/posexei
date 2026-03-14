@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: posexei-worker
+  namespace: posexei
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: posexei-worker
+  template:
+    metadata:
+      labels:
+        app: posexei-worker
+    spec:
+      containers:
+        - name: worker
+          image: posexei:latest
+          command: ["php", "artisan", "queue:work", "--tries=3"]
+          envFrom:
+            - configMapRef:
+                name: posexei-config
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: posexei-secrets
+                  key: db_password
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
