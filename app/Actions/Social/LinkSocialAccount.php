@@ -22,9 +22,9 @@ class LinkSocialAccount
 
         if ($socialAccount) {
             $socialAccount->fill([
-                'access_token' => $data->access_token,
-                'refresh_token' => $data->refresh_token,
-                'expires_at' => $data->expires_at,
+                'access_token' => $socialAccountData->access_token,
+                'refresh_token' => $socialAccountData->refresh_token,
+                'expires_at' => $socialAccountData->expires_at,
             ]);
 
             if ($socialAccount->isDirty()) {
