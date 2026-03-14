@@ -39,7 +39,7 @@ interface Connection {
     provider: 'facebook' | 'linkedin' | 'twitter' | 'instagram';
     name: string;
     connected_at: string;
-    status: 'active' | 'expired' | 'error';
+    status: 'connected' | 'processing' | 'disconnected' | 'expired';
     expires_at?: string;
 }
 
@@ -144,12 +144,14 @@ const connectedProviders = computed(() => {
 
 const getStatusBadge = (status: Connection['status']) => {
     switch (status) {
-        case 'active':
-            return { variant: 'success', icon: CheckCircle2, text: 'Active' };
+        case 'connected':
+            return { variant: 'success', icon: CheckCircle2, text: 'Connected' };
+        case 'processing':
+            return { variant: 'secondary', icon: RefreshCw, text: 'Processing' };
         case 'expired':
             return { variant: 'warning', icon: AlertCircle, text: 'Expired' };
-        case 'error':
-            return { variant: 'destructive', icon: XCircle, text: 'Error' };
+        case 'disconnected':
+            return { variant: 'destructive', icon: XCircle, text: 'Disconnected' };
         default:
             return { variant: 'secondary', icon: AlertCircle, text: 'Unknown' };
     }
@@ -277,7 +279,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
 
                                             <div class="flex items-center gap-1">
                                                 <Button
-                                                    v-if="connection.status !== 'active'"
+                                                    v-if="connection.status !== 'connected'"
                                                     variant="outline"
                                                     size="icon"
                                                     class="h-7 w-7"

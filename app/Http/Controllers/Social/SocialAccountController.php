@@ -19,17 +19,24 @@ class SocialAccountController extends Controller
 {
     public function edit(Request $request): Response
     {
-        $socialChannels = $request->user()->socialAccounts()->with('socialChannels')->get()->pluck('socialChannels')->flatten();
+        $socialAccounts = $request->user()->socialAccounts()->with('socialChannels')->get();
+        $connections = [];
+
+        foreach ($socialAccounts as $account) {
+            foreach ($account->socialChannels as $channel) {
+                $connections[] = [
+                    'id' => $channel->id,
+                    'provider' => strtolower($account->provider->value),
+                    'name' => $channel->name,
+                    'connected_at' => $channel->created_at ? $channel->created_at->format('M d, Y') : 'Unknown',
+                    'status' => $channel->pivot->status,
+                    'expires_at' => $channel->pivot->expires_at ? $channel->pivot->expires_at->format('M d, Y') : null,
+                ];
+            }
+        }
 
         return Inertia::render('settings/Connections', [
-            'connections' => $socialChannels->map(fn ($socialChannel) => new SocialChannelData(
-                id: $socialChannel->id,
-                channel_type: $socialChannel->channel_type,
-                external_id: $socialChannel->external_id,
-                name: $socialChannel->name,
-                status: SocialChannelStatus::from($socialChannel->pivot->status),
-                metadata_json: $socialChannel->metadata_json,
-            )),
+            'connections' => $connections,
         ]);
     }
 
