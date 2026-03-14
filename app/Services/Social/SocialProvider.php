@@ -2,6 +2,8 @@
 
 namespace App\Services\Social;
 
+use App\Data\Social\SocialAccountData;
+
 interface SocialProvider
 {
     public function getAccount(string $userAccessToken): SocialAccountData;

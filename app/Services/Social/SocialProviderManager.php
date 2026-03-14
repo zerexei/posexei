@@ -2,16 +2,18 @@
 
 namespace App\Services\Social;
 
+use App\Enums\Social\SocialProvider as SocialProviderEnum;
+
 class SocialProviderManager
 {
     protected array $providers = [
-        SocialProvider::FACEBOOK => FacebookService::class,
-        SocialProvider::INSTAGRAM => InstagramService::class,
-        SocialProvider::THREADS => ThreadsService::class,
+        SocialProviderEnum::FACEBOOK->value => FacebookService::class,
+        SocialProviderEnum::INSTAGRAM->value => InstagramService::class,
+        SocialProviderEnum::THREADS->value => ThreadsService::class,
     ];
 
-    public function getProvider(SocialProvider $provider): SocialProvider
+    public function getProvider(SocialProviderEnum $provider): SocialProvider
     {
-        return app($this->providers[$provider]);
+        return app($this->providers[$provider->value]);
     }
 }

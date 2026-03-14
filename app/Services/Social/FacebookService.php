@@ -5,9 +5,10 @@ namespace App\Services\Social;
 use App\Data\Social\SocialAccountData;
 use App\Data\Social\SocialChannelData;
 use App\Enums\Social\SocialProvider;
+use App\Services\Social\SocialProvider as ISocialProvider;
 use Illuminate\Support\Facades\Http;
 
-class FacebookService implements SocialProvider
+class FacebookService implements ISocialProvider
 {
     private const string BASE_URL = 'https://graph.facebook.com/v25.0';
 
@@ -20,6 +21,7 @@ class FacebookService implements SocialProvider
         ])->throw();
 
         return new SocialAccountData(
+            id: null,
             user_id: null,
             provider: SocialProvider::FACEBOOK,
             external_user_id: $response->json('id'),
@@ -44,6 +46,9 @@ class FacebookService implements SocialProvider
                     channel_type: self::CHANNEL_TYPE,
                     external_id: $account['id'],
                     name: $account['name'],
+                    access_token: $account['access_token'] ?? null,
+                    refresh_token: $account['refresh_token'] ?? null,
+                    expires_at: $account['expires_at'] ?? null,
                 );
 
                 if (count($chunk) >= $chunkSize) {
