@@ -31,7 +31,7 @@ services:
             - 'traefik.http.routers.app.rule=Host(`app.localhost`)'
             - 'traefik.http.services.app.loadbalancer.server.port=80'
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost"]
+            test: ['CMD', 'curl', '-f', 'http://localhost']
             interval: 30s
             timeout: 10s
             retries: 3
@@ -45,7 +45,7 @@ services:
         image: traefik:v3.6
         command:
             - '--api.insecure=true'
-            - "--api.dashboard=true"
+            - '--api.dashboard=true'
             - '--providers.docker=true'
             - '--entrypoints.web.address=:80'
         ports:
@@ -57,7 +57,7 @@ services:
             - sail
         restart: always
         healthcheck:
-            test: ["CMD", "traefik", "healthcheck"]
+            test: ['CMD', 'traefik', 'healthcheck']
             interval: 10s
             timeout: 5s
             retries: 3
@@ -90,6 +90,7 @@ services:
                 - '${DB_USERNAME}'
             retries: 3
             timeout: 5s
+
     # =========================
     # Redis
     # =========================
@@ -97,7 +98,7 @@ services:
         image: redis:8.6.0-alpine3.23
         container_name: redis
         ports:
-            - "6379:6379"
+            - '6379:6379'
         networks:
             - sail
         restart: unless-stopped
@@ -121,6 +122,7 @@ services:
             - 'traefik.enable=true'
             - 'traefik.http.routers.pgadmin.rule=Host(`pgadmin.localhost`)'
             - 'traefik.http.services.pgadmin.loadbalancer.server.port=80'
+
     ngrok:
         image: ngrok/ngrok:latest
         command: http --url=${NGROK_URL} laravel.test:80
@@ -133,28 +135,28 @@ services:
             - traefik
         ports:
             - '4040:4040'
+
     # =========================
     # MinIO (S3 Storage)
     # =========================
     minio:
-      image: minio/minio:latest
-      container_name: minio
-      command: server /data --console-address ":9001"
-      environment:
-        MINIO_ROOT_USER: ${MINIO_USER}
-        MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
-      ports:
-        - "9000:9000"
-        - "9001:9001"
-      volumes:
-        - minio_data:/data
-      networks:
-        - sail
-      restart: unless-stopped
-      labels:
-        - "traefik.http.routers.minio-console.rule=Host(`minio.localhost`)"
-        - "traefik.http.routers.minio-console.entrypoints=web"
-        - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
+        image: minio/minio:latest
+        container_name: minio
+        command: server /data --console-address ":9001"
+        environment:
+            MINIO_ROOT_USER: ${MINIO_USER}
+            MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+        ports:
+            - '9000:9000'
+            - '9001:9001'
+        volumes:
+            - minio_data:/data
+        networks:
+            - sail
+        restart: unless-stopped
+        labels:
+            - 'traefik.http.routers.minio-console.rule=Host(`minio.localhost`)'
+            - 'traefik.http.services.minio-console.loadbalancer.server.port=9001'
 
     # =========================
     # Grafana - Visualizations
@@ -176,10 +178,9 @@ services:
         networks:
             - sail
         labels:
-            - "traefik.enable=true"
-            - "traefik.http.routers.grafana.rule=Host(`grafana.localhost`)"
-            - "traefik.http.routers.grafana.entrypoints=web"
-            - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+            - 'traefik.enable=true'
+            - 'traefik.http.routers.grafana.rule=Host(`grafana.localhost`)'
+            - 'traefik.http.services.grafana.loadbalancer.server.port=3000'
 
     # =========================
     # Prometheus - Metrics Storage
@@ -202,10 +203,9 @@ services:
         depends_on:
             - opentelemetry-collector
         labels:
-            - "traefik.enable=true"
-            - "traefik.http.routers.prometheus.rule=Host(`prometheus.localhost`)"
-            - "traefik.http.routers.prometheus.entrypoints=web"
-            - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+            - 'traefik.enable=true'
+            - 'traefik.http.routers.prometheus.rule=Host(`prometheus.localhost`)'
+            - 'traefik.http.services.prometheus.loadbalancer.server.port=9090'
 
     # =========================
     # Alertmanager - Alerting
@@ -218,10 +218,9 @@ services:
         networks:
             - sail
         labels:
-            - "traefik.enable=true"
-            - "traefik.http.routers.alertmanager.rule=Host(`alertmanager.localhost`)"
-            - "traefik.http.routers.alertmanager.entrypoints=web"
-            - "traefik.http.services.alertmanager.loadbalancer.server.port=9093"
+            - 'traefik.enable=true'
+            - 'traefik.http.routers.alertmanager.rule=Host(`alertmanager.localhost`)'
+            - 'traefik.http.services.alertmanager.loadbalancer.server.port=9093'
 
     # =========================
     # Loki - Logs Storage
@@ -229,12 +228,12 @@ services:
     loki:
         image: grafana/loki:latest
         container_name: loki
-        command: -config.file=/etc/loki/local-config.yml
+        command: --config.file=/etc/loki/local-config.yml
         volumes:
             - './observability/loki/loki-config.yml:/etc/loki/local-config.yml:ro'
             - 'sail-loki:/loki'
         ports:
-            - "3100:3100"
+            - '3100:3100'
         networks:
             - sail
         depends_on:
@@ -246,11 +245,11 @@ services:
     promtail:
         image: grafana/promtail:latest
         container_name: promtail
+        command: --config.file=/etc/promtail/config.yml
         volumes:
             - './observability/promtail/promtail.yml:/etc/promtail/config.yml:ro'
             - '/var/lib/docker/containers:/var/lib/docker/containers:ro'
             - '/var/run/docker.sock:/var/run/docker.sock:ro'
-        command: -config.file=/etc/promtail/config.yml
         networks:
             - sail
         depends_on:
@@ -262,7 +261,7 @@ services:
     tempo:
         image: grafana/tempo:latest
         container_name: tempo
-        command: [ "-config.file=/etc/tempo.yaml" ]
+        command: --config.file=/etc/tempo.yaml
         volumes:
             - './observability/tempo/tempo-config.yml:/etc/tempo.yaml:ro'
             - 'sail-tempo:/var/tempo'
@@ -277,7 +276,7 @@ services:
     opentelemetry-collector:
         image: otel/opentelemetry-collector-contrib:latest
         container_name: otel-collector
-        command: ["--config=/etc/otel-collector-config.yaml"]
+        command: --config=/etc/otel-collector-config.yaml
         volumes:
             - './observability/opentelemetry/otel-collector-config.yml:/etc/otel-collector-config.yaml:ro'
         networks:
@@ -293,14 +292,14 @@ services:
         image: prom/node-exporter:latest
         container_name: node-exporter
         restart: unless-stopped
-        volumes:
-            - /proc:/host/proc:ro
-            - /sys:/host/sys:ro
-            - /:/rootfs:ro
         command:
             - '--path.procfs=/host/proc'
             - '--path.sysfs=/host/sys'
             - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+        volumes:
+            - /proc:/host/proc:ro
+            - /sys:/host/sys:ro
+            - /:/rootfs:ro
         networks:
             - sail
 
