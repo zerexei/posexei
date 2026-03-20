@@ -42,15 +42,15 @@ jobs:
 
       - name: Deploy to EKS
         run: |
-          kubectl apply -f k8s/app/namespace.yaml
-          kubectl apply -f k8s/app/configmap.yaml
-          kubectl apply -f k8s/app/nginx-configmap.yaml
+          kubectl apply -f infra/k8s/app/namespace.yaml
+          kubectl apply -f infra/k8s/app/configmap.yaml
+          kubectl apply -f infra/k8s/app/nginx-configmap.yaml
           # Update image in deployment
           kubectl set image deployment/posexei-web php=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }} -n posexei
           kubectl set image deployment/posexei-worker worker=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }} -n posexei
-          kubectl apply -f k8s/app/web-deployment.yaml
-          kubectl apply -f k8s/app/worker-deployment.yaml
-          kubectl apply -f k8s/app/scheduler-cronjob.yaml
-          kubectl apply -f k8s/app/service.yaml
-          kubectl apply -f k8s/app/ingress.yaml
-          kubectl apply -f k8s/app/hpa.yaml
+          kubectl apply -f infra/k8s/app/web-deployment.yaml
+          kubectl apply -f infra/k8s/app/worker-deployment.yaml
+          kubectl apply -f infra/k8s/app/scheduler-cronjob.yaml
+          kubectl apply -f infra/k8s/app/service.yaml
+          kubectl apply -f infra/k8s/app/ingress.yaml
+          kubectl apply -f infra/k8s/app/hpa.yaml
