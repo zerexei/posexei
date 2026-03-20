@@ -6,11 +6,11 @@ Posexei is built with a modular, service-oriented architecture designed for scal
 ## Core Components
 
 ### 1. Application Layer (Laravel)
-- **Framework**: Laravel 11.x (PHP 8.3/8.4).
+- **Framework**: Laravel 13.x (PHP 8.5).
 - **Communication**: Inertia.js (Vue) for the frontend, JSON APIs for internal service interaction.
 - **Service Providers**: 
-  - `SocialProviderManager`: Handles the abstraction of different social platforms (Facebook, Twitter, LinkedIn).
   - `TelemetryServiceProvider`: Manages OpenTelemetry instrumentation for traces and metrics.
+  - `TelescopeServiceProvider`: Monitors requests insight for debugging and monitoring.
 
 ### 2. Infrastructure Layer
 - **Reverse Proxy**: Traefik v3 (handling routing, SSL, and load balancing).
@@ -39,6 +39,13 @@ Posexei is built with a modular, service-oriented architecture designed for scal
 4. `UpsertSocialChannels` job processes destinations in the background.
 
 ### Post Publishing
-1. User creates a post and selects channels.
+1. User creates a post and selects social channels.
 2. The application dispatches jobs for each platform.
-3. Observers and state managers track the status through the `post_platform_status` table.
+3. Observers and state managers track the status through the `post_social_channel_status` table.
+
+## 📖 Related Documentation
+
+- [Development](development.md)
+- [Infrastructure](infrastructure.md)
+- [Observability](observability.md)
+- [Tools](tools.md)

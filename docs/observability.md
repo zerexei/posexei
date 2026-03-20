@@ -1,6 +1,6 @@
 # Laravel Observability Stack (LGTM + OTEL)
 
-This project now includes a complete, production-ready observability stack based on OpenTelemetry and the Grafana LGTM stack (Loki, Grafana, Tempo, Mimir/Prometheus).
+observability stack based on OpenTelemetry and the Grafana LGTM stack (Loki, Grafana, Tempo, Mimir/Prometheus).
 
 ## Architecture
 
@@ -21,22 +21,23 @@ This project now includes a complete, production-ready observability stack based
 ## Getting Started
 
 1. **Environment Variables**: Ensure the following exists in your `.env`:
-   ```env
-   OTEL_SERVICE_NAME=laravel-app
-   OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-   OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-   ```
 
-2. **Start the Stack**:
-   Since you are using Laravel Sail, just run:
-   ```bash
-   ./vendor/bin/sail up -d
-   ```
+    ```env
+    OTEL_SERVICE_NAME=laravel-app
+    OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+    ```
+
+2. **Start the Stack**: using Laravel Sail, just run:
+
+    ```bash
+    ./vendor/bin/sail up -d
+    ```
 
 3. **Access Dashboards**:
-   - **Grafana**: [http://grafana.localhost](http://grafana.localhost) (User: `admin`, Pass: `admin`)
-   - **Prometheus**: [http://prometheus.localhost](http://prometheus.localhost)
-   - **Alertmanager**: [http://alertmanager.localhost](http://alertmanager.localhost)
+    - **Grafana**: [http://grafana.localhost](http://grafana.localhost) (credentials: `.env`)
+    - **Prometheus**: [http://prometheus.localhost](http://prometheus.localhost)
+    - **Alertmanager**: [http://alertmanager.localhost](http://alertmanager.localhost)
 
 ## Observability Features
 
@@ -47,8 +48,16 @@ This project now includes a complete, production-ready observability stack based
 ## Alerting
 
 Pre-configured alerts for:
+
 - High CPU Usage (>80%)
 - High Memory Usage (>90%)
 - Database Down
 
 Alerts can be managed in Alertmanager or Grafana Alerting.
+
+## 📖 Related Documentation
+
+- [Architecture](architecture.md)
+- [Development](development.md)
+- [Infrastructure](infrastructure.md)
+- [Tools](tools.md)
