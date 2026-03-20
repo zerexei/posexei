@@ -5,7 +5,7 @@ namespace App\Models\Social;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PostChannel extends Model
+class PostSocialChannelStatus extends Model
 {
     protected $fillable = [
         'post_id',
@@ -20,8 +20,8 @@ class PostChannel extends Model
         return $this->belongsTo(Post::class);
     }
 
-    public function channel(): BelongsTo
+    public function socialChannel(): BelongsTo
     {
-        return $this->belongsTo(SocialChannel::class, 'social_channel_id');
+        return $this->belongsTo(SocialChannel::class);
     }
 }

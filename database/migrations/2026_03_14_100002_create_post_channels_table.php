@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('post_channels', function (Blueprint $table) {
+        Schema::create('post_social_channel_status', function (Blueprint $table) {
             $table->id();
             $table->foreignId('post_id')->constrained()->cascadeOnDelete();
             $table->foreignId('social_channel_id')->constrained()->cascadeOnDelete();
