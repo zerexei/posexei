@@ -10,7 +10,7 @@ class PostController extends Controller
     public function index(): Response
     {
         $posts = auth()->user()->posts()
-            ->with(['media', 'channels.channel.accounts'])
+            ->with(['media', 'channels.socialChannel.accounts'])
             ->latest()
             ->get()
             ->map(fn ($post) => [

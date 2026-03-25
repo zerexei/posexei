@@ -4,9 +4,12 @@ namespace App\Models\Social;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class PostSocialChannelStatus extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'post_id',
         'social_channel_id',

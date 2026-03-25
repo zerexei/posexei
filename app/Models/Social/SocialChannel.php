@@ -2,11 +2,14 @@
 
 namespace App\Models\Social;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class SocialChannel extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'channel_type',
         'external_id',

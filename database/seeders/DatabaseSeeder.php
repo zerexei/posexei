@@ -31,6 +31,25 @@ class DatabaseSeeder extends Seeder
             'role_id' => $admin->id,
         ]);
 
+        // account -> channel
+        // post -> post_channel_status -> channel -> account
+
+        $socialAccount = \App\Models\Social\SocialAccount::factory()->create();
+        $socialChannels = \App\Models\Social\SocialChannel::factory()->count(5)->create();
+        $socialAccount->socialChannels()->syncWithoutDetaching($socialChannels->mapWithKeys(fn($socialChannel) => [
+            $socialChannel->id => [
+                'access_token' => str()->uuid(),
+                'refresh_token' => str()->uuid(),
+                'expires_at' => fake()->creditCardExpirationDate(),
+                'status' => fake()->randomElement(\App\Enums\Social\SocialChannelStatus::cases()),
+            ],
+        ]));
+
+        \App\Models\Social\Post::factory()
+            ->has(\App\Models\Social\PostSocialChannelStatus::factory()->count(rand(3, 5)))
+            ->count(15)
+            ->create();
+
         // User::factory(10)->create();
     }
 }
