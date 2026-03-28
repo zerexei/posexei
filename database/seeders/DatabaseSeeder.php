@@ -34,21 +34,40 @@ class DatabaseSeeder extends Seeder
         // account -> channel
         // post -> post_channel_status -> channel -> account
 
-        $socialAccount = \App\Models\Social\SocialAccount::factory()->create();
-        $socialChannels = \App\Models\Social\SocialChannel::factory()->count(5)->create();
-        $socialAccount->socialChannels()->syncWithoutDetaching($socialChannels->mapWithKeys(fn($socialChannel) => [
-            $socialChannel->id => [
-                'access_token' => str()->uuid(),
-                'refresh_token' => str()->uuid(),
-                'expires_at' => fake()->creditCardExpirationDate(),
-                'status' => fake()->randomElement(\App\Enums\Social\SocialChannelStatus::cases()),
-            ],
-        ]));
+        $accounts = \App\Models\Social\SocialAccount::factory()->count(5)->create()->each(function ($socialAccount) {
+            $socialChannels = \App\Models\Social\SocialChannel::factory()
+                ->count(3)
+                ->create();
+
+            $socialAccount->socialChannels()->syncWithoutDetaching(
+                $socialChannels->mapWithKeys(fn($socialChannel) => [
+                    $socialChannel->id => [
+                        'access_token' => str()->uuid(),
+                        'refresh_token' => str()->uuid(),
+                        'expires_at' => fake()->creditCardExpirationDate(),
+                        'status' => fake()->randomElement(\App\Enums\Social\SocialChannelStatus::cases()),
+                    ],
+                ])
+            );
+        });
+
+        $socialChannels = $accounts->pluck('socialChannels')->flatten();
 
         \App\Models\Social\Post::factory()
-            ->has(\App\Models\Social\PostSocialChannelStatus::factory()->count(rand(3, 5)))
-            ->count(15)
-            ->create();
+            ->count(rand(5, 15))
+            ->create()
+            ->each(function ($post) use ($socialChannels) {
+                $selected = $socialChannels
+                    ->shuffle()
+                    ->take(fake()->numberBetween(3, 5));
+
+                foreach ($selected as $channel) {
+                    \App\Models\Social\PostSocialChannelStatus::factory()->create([
+                        'post_id' => $post->id,
+                        'social_channel_id' => $channel->id,
+                    ]);
+                }
+            });
 
         // User::factory(10)->create();
     }
