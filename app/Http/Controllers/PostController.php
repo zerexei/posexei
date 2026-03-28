@@ -10,7 +10,7 @@ class PostController extends Controller
     public function index(): Response
     {
         $posts = auth()->user()->posts()
-            ->with(['media', 'channels.socialChannel.accounts'])
+            ->with(['media', 'postSocialChannelsStatuses.socialChannel.accounts'])
             ->latest()
             ->get()
             ->map(fn ($post) => [
@@ -19,7 +19,7 @@ class PostController extends Controller
                 'content' => $post->content,
                 'type' => $post->post_type,
                 'status' => $post->status === 'publishing' ? 'scheduled' : ($post->status === 'published' ? 'published' : 'failed'),
-                'platforms' => $post->channels->map(fn ($c) => strtolower($c->channel->accounts->first()->provider->value ?? 'facebook')),
+                'platforms' => $post->postSocialChannelsStatuses->map(fn ($c) => strtolower($c->socialChannel->accounts->first()->provider->value ?? 'facebook')),
                 'created_at' => $post->created_at->diffForHumans(),
                 'engagement' => '-',
                 'reach' => '-',
