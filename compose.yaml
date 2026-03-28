@@ -46,7 +46,6 @@ services:
         command:
             - '--api.insecure=true'
             - '--api.dashboard=true'
-            - '--providers.docker=true'
             - '--entrypoints.web.address=:80'
         ports:
             - '80:80'
