@@ -24,7 +24,7 @@ services:
         networks:
             - sail
         depends_on:
-            - pgsql
+            - postgres
             - redis
         labels:
             - 'traefik.enable=true'
@@ -46,6 +46,7 @@ services:
         command:
             - '--api.insecure=true'
             - '--api.dashboard=true'
+            - '--providers.docker=true'
             - '--entrypoints.web.address=:80'
         ports:
             - '80:80'
@@ -64,7 +65,7 @@ services:
     # =========================
     # PostgreSQL database
     # =========================
-    pgsql:
+    postgres:
         image: 'postgres:18-alpine'
         ports:
             - '${FORWARD_DB_PORT:-5432}:5432'
@@ -74,7 +75,7 @@ services:
             POSTGRES_USER: '${DB_USERNAME}'
             POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
         volumes:
-            - 'sail-pgsql:/var/lib/postgresql'
+            - 'sail-postgres:/var/lib/postgresql'
             - './vendor/laravel/sail/database/pgsql/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql'
         networks:
             - sail
@@ -112,7 +113,7 @@ services:
             PGADMIN_DEFAULT_EMAIL: admin@example.com
             PGADMIN_DEFAULT_PASSWORD: admin
         depends_on:
-            - pgsql
+            - postgres
         networks:
             - sail
         volumes:
@@ -310,7 +311,7 @@ services:
         networks:
             - sail
         depends_on:
-            - pgsql
+            - postgres
 
     redis-exporter:
         image: bitnami/redis-exporter:latest
@@ -342,7 +343,7 @@ networks:
         driver: bridge
 
 volumes:
-    sail-pgsql:
+    sail-postgres:
         driver: local
     sail-pgadmin:
         driver: local
