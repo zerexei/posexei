@@ -1,9 +1,0 @@
-tempo:
-  storage:
-    trace:
-      backend: s3
-      s3:
-        bucket: tempo-storage-bucket # To be replaced with actual terraform output
-        region: us-east-1
-
-reportingEnabled: false
