@@ -1,129 +1,178 @@
+name: posexei
+
 networks:
-    app:
+  app:
 
 volumes:
-    identity-db-data:
-    social-post-db-data:
-    social-account-db-data:
-    social-publish-db-data:
-    redis-data:
+  identity-db-data:
+  social-post-db-data:
+  social-account-db-data:
+  social-publish-db-data:
+  redis-data:
 
 services:
 
-    # =========================
-    # 🌐 FRONTEND
-    # =========================
-    client:
-        build: ../apps/client
-        ports:
-            - "3000:3000"
-        depends_on:
-            - gateway
-        volumes:
-            - ../apps/client:/app
-            - /app/node_modules
-        networks:
-            - app
+  # =========================
+  # 🌐 FRONTEND
+  # =========================
+  client:
+    build: ../apps/client
+    depends_on:
+      - traefik
+      - gateway
+    volumes:
+      - ../apps/client:/app
+      - /app/node_modules
+    networks:
+      - app
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`app.localhost`)"
+      - "traefik.http.routers.app.entrypoints=web"
+      - "traefik.http.services.app.loadbalancer.server.port=3000"
 
-    # =========================
-    # 🚪 GATEWAY
-    # =========================
-    gateway:
-        build: ../gateway
-        ports:
-            - "3001:3001"
-        depends_on:
-            - identity-service
-            - social-account-service
-            - social-post-service
-            - social-publish-service
-        networks:
-            - app
+  # =========================
+  # 🚪 GATEWAY
+  # =========================
+  gateway:
+    build: ../gateway/app
+    depends_on:
+      - traefik
+      - identity-service
+      - social-account-service
+      - social-post-service
+      - social-publish-service
+    networks:
+      - app
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=Host(`gateway.localhost`)"
+      - "traefik.http.routers.gateway.entrypoints=web"
+      - "traefik.http.services.gateway.loadbalancer.server.port=3001"
 
-    # =========================
-    # 🔐 Identity Service
-    # =========================
-    identity-service:
-        build: ../services/identity-service
-        environment:
-            DATABASE_URL: postgresql://identity_user:identity_pass@identity-db:5432/identity_db
-        depends_on:
-            - identity-db
-        networks:
-            - app
+      # Attach middleware
+      - "traefik.http.routers.gateway.middlewares=gateway-cors"
 
-    identity-db:
-        image: postgres:18-alpine
-        environment:
-            POSTGRES_DB: identity_db
-            POSTGRES_USER: identity_user
-            POSTGRES_PASSWORD: identity_pass
-        volumes:
-            - identity-db-data:/var/lib/postgresql/data
-        networks:
-            - app
+      # CORS middleware
+      - "traefik.http.middlewares.gateway-cors.headers.accesscontrolalloworigin\
+        list=http://app.localhost"
+      - "traefik.http.middlewares.gateway-cors.headers.accesscontrolallowmethod\
+        s=GET,OPTIONS,PUT,POST,DELETE"
+      - "traefik.http.middlewares.gateway-cors.headers.accesscontrolallowheader\
+        s=*"
+      - "traefik.http.middlewares.gateway-cors.headers.accesscontrolallowcreden\
+        tials=true"
 
-    # =========================
-    # Social Post Service
-    # =========================
-    social-post-service:
-        build: ../services/social-post-service
-        environment:
-            DATABASE_URL: postgresql://social_post_user:social_post_pass@social-post-db:5432/social_post_db
-        depends_on:
-            - social-post-db
-        networks:
-            - app
+  # =========================
+  # 🔐 Identity Service
+  # =========================
+  identity-service:
+    build: ../services/identity-service
+    env_file:
+      - ../services/identity-service/.env
+    # environment:
+    #   DATABASE_URL: postgresql://identity_user:identity_pass@identity-db:5432/identity_db
+    depends_on:
+      - identity-db
+    networks:
+      - app
 
-    social-post-db:
-        image: postgres:18-alpine
-        environment:
-            POSTGRES_DB: social_post_db
-            POSTGRES_USER: social_post_user
-            POSTGRES_PASSWORD: social_post_pass
-        volumes:
-            - social-post-db-data:/var/lib/postgresql/data
-        networks:
-            - app
+  identity-db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: identity_db
+      POSTGRES_USER: identity_user
+      POSTGRES_PASSWORD: identity_pass
+    volumes:
+      - identity-db-data:/var/lib/postgresql/data
+    networks:
+      - app
 
-    # =========================
-    # Social Account Service
-    # =========================
-    social-account-service:
-        build: ../services/social-account-service
-        environment:
-            DATABASE_URL: postgresql://social_account_user:social_account_pass@social-account-db:5432/social_account_db
-        depends_on:
-            - social-account-db
-        networks:
-            - app
+  # =========================
+  # Social Post Service
+  # =========================
+  social-post-service:
+    build: ../services/social-post-service
+    environment:
+      DATABASE_URL: postgresql://social_post_user:social_post_pass@social-post-db:5432/social_post_db
+    depends_on:
+      - social-post-db
+    networks:
+      - app
 
-    social-account-db:
-        image: postgres:18-alpine
-        environment:
-            POSTGRES_DB: social_account_db
-            POSTGRES_USER: social_account_user
-            POSTGRES_PASSWORD: social_account_pass
-        volumes:
-            - social-account-db-data:/var/lib/postgresql/data
-        networks:
-            - app
+  social-post-db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: social_post_db
+      POSTGRES_USER: social_post_user
+      POSTGRES_PASSWORD: social_post_pass
+    volumes:
+      - social-post-db-data:/var/lib/postgresql/data
+    networks:
+      - app
 
-    # =========================
-    # Social Publish Service
-    # =========================
-    social-publish-service:
-        build: ../services/social-publish-service
-        depends_on:
-            - redis
-        networks:
-            - app
+  # =========================
+  # Social Account Service
+  # =========================
+  social-account-service:
+    build: ../services/social-account-service
+    environment:
+      DATABASE_URL: postgresql://social_account_user:social_account_pass@social-account-db:5432/social_account_db
+    depends_on:
+      - social-account-db
+    networks:
+      - app
 
-    redis:
-        image: redis:8.6.0-alpine3.23
-        ports:
-            - "6379:6379"
-        volumes:
-            - redis-data:/data
-        networks:
-            - app
+  social-account-db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: social_account_db
+      POSTGRES_USER: social_account_user
+      POSTGRES_PASSWORD: social_account_pass
+    volumes:
+      - social-account-db-data:/var/lib/postgresql/data
+    networks:
+      - app
+
+  # =========================
+  # Social Publish Service
+  # =========================
+  social-publish-service:
+    build: ../services/social-publish-service
+    depends_on:
+      - redis
+    networks:
+      - app
+
+  # =========================
+  # Redis Server
+  # =========================
+  redis:
+    image: redis:8.6.0-alpine3.23
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - app
+    restart: always
+
+  # =========================
+  # Traefik reverse proxy
+  # src: https://doc.traefik.io/traefik/getting-started/docker
+  # =========================
+  traefik:
+    image: traefik:v3.6.8
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - app
+    restart: always

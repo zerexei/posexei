@@ -1,22 +1,22 @@
-/.phpunit.cache
-/bootstrap/ssr
-/node_modules
-/public/build
-/public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-/resources/js/actions
-/resources/js/routes
-/resources/js/wayfinder
-/vendor
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
 .env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-Homestead.json
-Homestead.yaml
+.venv
+env/
+venv/
+ENV/
+
+# Environment variables
+.env.*
+!.env.example
+
+*.db
+*.sqlite3
+
 npm-debug.log
 yarn-error.log
 /auth.json
@@ -25,10 +25,12 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+*.swp
+*.swo
 
 # Observability data
-/grafana/data
-/prometheus/data
-/loki
-/tempo
+/observability/grafana/data
+/observability/prometheus/data
+/observability/loki/data
+/observability/tempo/data
 /*.log

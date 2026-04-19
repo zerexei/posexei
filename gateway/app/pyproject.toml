@@ -1,0 +1,10 @@
+[project]
+name = "gateway"
+version = "0.1.0"
+description = "posexei gateway"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.136.0",
+    "httpx>=0.28.1",
+]
