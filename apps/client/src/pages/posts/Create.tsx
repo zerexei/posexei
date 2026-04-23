@@ -45,10 +45,10 @@ import {
     DialogTrigger
 } from '@/components/ui/core';
 import { cn } from '@/lib/utils';
-import { mockConnections } from '@/mocks';
 import { useTitle } from '@/hooks/use-title';
 import { usePublishPost } from '@/hooks/usePublishPost';
-import { socialApi } from '@/api/client';
+import { socialApi, accountsApi } from '@/api/client';
+import type { Account } from '@/api/types';
 
 const getPlatformIcon = (provider: string) => {
     switch (provider) {
@@ -60,26 +60,37 @@ const getPlatformIcon = (provider: string) => {
     }
 };
 
-const platforms = mockConnections.map(conn => {
-    const brand = {
-        facebook: { color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-800/50' },
-        instagram: { color: 'text-pink-600', bg: 'bg-pink-50 dark:bg-pink-950/30', border: 'border-pink-200 dark:border-pink-800/50' },
-        twitter: { color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-950/30', border: 'border-sky-200 dark:border-sky-800/50' },
-        linkedin: { color: 'text-blue-700', bg: 'bg-indigo-50 dark:bg-indigo-950/30', border: 'border-indigo-200 dark:border-indigo-800/50' },
-    }[conn.provider] || { color: 'text-foreground', bg: 'bg-muted', border: 'border-border' };
-
+const getPlatformStyle = (provider: string) => {
     return {
-        id: conn.id.toString(),
-        name: conn.provider.charAt(0).toUpperCase() + conn.provider.slice(1),
-        provider: conn.provider,
-        icon: getPlatformIcon(conn.provider),
-        account: conn.name,
-        ...brand
-    };
-});
+        facebook:  { color: 'text-blue-600',  bg: 'bg-blue-50 dark:bg-blue-950/30',   border: 'border-blue-200 dark:border-blue-800/50' },
+        instagram: { color: 'text-pink-600',  bg: 'bg-pink-50 dark:bg-pink-950/30',   border: 'border-pink-200 dark:border-pink-800/50' },
+        twitter:   { color: 'text-sky-500',   bg: 'bg-sky-50 dark:bg-sky-950/30',     border: 'border-sky-200 dark:border-sky-800/50' },
+        linkedin:  { color: 'text-blue-700',  bg: 'bg-indigo-50 dark:bg-indigo-950/30', border: 'border-indigo-200 dark:border-indigo-800/50' },
+    }[provider] || { color: 'text-foreground', bg: 'bg-muted', border: 'border-border' };
+};
 
 export const CreatePost: React.FC = () => {
     useTitle('Compose Post');
+
+    // Live accounts from the social-account-service
+    const [accounts, setAccounts] = React.useState<Account[]>([]);
+    React.useEffect(() => {
+        accountsApi.list().then(setAccounts).catch(() => {
+            // Gateway not running locally — show empty
+            setAccounts([]);
+        });
+    }, []);
+
+    // Derive a 'platform card' from each live account
+    const platforms = accounts.map(acc => ({
+        id: acc.id,
+        name: acc.provider.charAt(0).toUpperCase() + acc.provider.slice(1),
+        provider: acc.provider,
+        icon: getPlatformIcon(acc.provider),
+        account: acc.name,
+        page_id: acc.page_id,
+        ...getPlatformStyle(acc.provider),
+    }));
     
     const [selectedPlatforms, setSelectedPlatforms] = React.useState<string[]>([]);
     const [content, setContent] = React.useState('');
@@ -101,15 +112,14 @@ export const CreatePost: React.FC = () => {
 
     const handlePublish = () => {
         if (!selectedPlatforms.length || !content) return;
-        
-        // Use the first platform as page_id for demonstration (assuming account maps to page_id)
         const pId = selectedPlatforms[0];
         const platformObj = platforms.find(p => p.id === pId);
-        
+        if (!platformObj) return;
         publish({
-            page_id: platformObj?.account || 'mock_page_id', 
+            page_id: platformObj.page_id,
+            provider: platformObj.provider,
             message: content,
-            platforms: selectedPlatforms.map(id => platforms.find(p => p.id === id)?.provider || 'facebook')
+            platforms: selectedPlatforms.map(id => platforms.find(p => p.id === id)?.provider ?? 'facebook'),
         });
     };
 
@@ -442,7 +452,7 @@ export const CreatePost: React.FC = () => {
                         <div>
                             <p className="font-bold">Publication Failed</p>
                             <p className="text-sm">{error || 'Job encountered an error or was routed to the DLQ.'}</p>
-                            <p className="text-xs opacity-70 mt-1">Status: {jobStatus?.last_step || jobStatus?.status || 'unknown'}</p>
+                            <p className="text-xs opacity-70 mt-1">Status: {jobStatus?.status || 'unknown'}</p>
                         </div>
                         <Button variant="outline" className="border-rose-500/50 text-rose-500 hover:bg-rose-500/10" onClick={handleCheckDlq}>
                             Check DLQ
@@ -590,46 +600,65 @@ export const CreatePost: React.FC = () => {
                                 </div>
                             </CardHeader>
                             <CardContent className="p-3 space-y-1.5 overflow-y-auto max-h-[600px] no-scrollbar">
-                                {platforms.map(platform => (
-                                    <button
-                                        key={platform.id}
-                                        onClick={() => togglePlatform(platform.id)}
-                                        className={cn(
-                                            'flex items-center justify-between w-full p-4 rounded-2xl transition-all duration-300 border border-transparent group',
-                                            selectedPlatforms.includes(platform.id) ? cn(platform.bg, platform.border, 'shadow-md scale-[1.02]') : 'hover:bg-muted/40'
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-4 min-w-0">
-                                            <div className={cn(
-                                                'w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 border border-border bg-card shrink-0 shadow-sm',
-                                                selectedPlatforms.includes(platform.id) ? cn('bg-card scale-110 shadow-lg', platform.color) : 'bg-card text-muted-foreground opacity-40'
-                                            )}>
-                                                <platform.icon className="size-6" />
-                                            </div>
-                                            <div className="text-left min-w-0 font-sans">
-                                                <p className={cn("text-sm font-black leading-tight", selectedPlatforms.includes(platform.id) ? 'text-foreground' : 'text-muted-foreground opacity-60')}>
-                                                    {platform.name}
-                                                </p>
-                                                <p className="text-[11px] text-muted-foreground font-medium truncate uppercase tracking-tighter mt-1 opacity-40 italic">
-                                                    {platform.account}
-                                                </p>
-                                            </div>
+                                {platforms.length === 0 ? (
+                                    <div className="p-6 flex flex-col items-center text-center gap-4">
+                                        <div className="p-4 bg-muted rounded-full">
+                                            <PlusCircle className="w-8 h-8 text-muted-foreground/30" />
                                         </div>
-                                        {selectedPlatforms.includes(platform.id) && (
-                                            <div className={cn('rounded-full p-1.5 shadow-lg ring-4 ring-card shrink-0 animate-in zoom-in duration-300', platform.color.replace('text-', 'bg-').replace('600', '500').replace('700', '600'))}>
-                                                <Check className="w-3.5 h-3.5 text-white stroke-[4px]" />
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-bold text-foreground">No accounts connected</p>
+                                            <p className="text-[11px] text-muted-foreground font-medium">Go to Settings → Connections to link your social media accounts before publishing.</p>
+                                        </div>
+                                        <Link to="/settings/connections" className="w-full">
+                                            <Button variant="outline" className="w-full rounded-2xl h-11 font-bold text-xs gap-2">
+                                                <PlusCircle className="w-4 h-4" /> Connect Accounts
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                ) : (
+                                    platforms.map(platform => (
+                                        <button
+                                            key={platform.id}
+                                            onClick={() => togglePlatform(platform.id)}
+                                            className={cn(
+                                                'flex items-center justify-between w-full p-4 rounded-2xl transition-all duration-300 border border-transparent group',
+                                                selectedPlatforms.includes(platform.id) ? cn(platform.bg, platform.border, 'shadow-md scale-[1.02]') : 'hover:bg-muted/40'
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-4 min-w-0">
+                                                <div className={cn(
+                                                    'w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 border border-border bg-card shrink-0 shadow-sm',
+                                                    selectedPlatforms.includes(platform.id) ? cn('bg-card scale-110 shadow-lg', platform.color) : 'bg-card text-muted-foreground opacity-40'
+                                                )}>
+                                                    <platform.icon className="size-6" />
+                                                </div>
+                                                <div className="text-left min-w-0 font-sans">
+                                                    <p className={cn("text-sm font-black leading-tight", selectedPlatforms.includes(platform.id) ? 'text-foreground' : 'text-muted-foreground opacity-60')}>
+                                                        {platform.name}
+                                                    </p>
+                                                    <p className="text-[11px] text-muted-foreground font-medium truncate uppercase tracking-tighter mt-1 opacity-40 italic">
+                                                        {platform.account}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        )}
-                                    </button>
-                                ))}
-                                <div className="p-4 pt-6">
-                                    <Link to="/settings/connections">
-                                        <Button variant="outline" className="w-full border-dashed border-border/60 bg-muted/5 hover:bg-muted/10 rounded-2xl h-14 text-[10px] font-black uppercase tracking-[0.15em] gap-3 text-muted-foreground/60 transition-all hover:text-foreground">
-                                            <PlusCircle className="w-5 h-5 opacity-40" />
-                                            Connect Ecosystem
-                                        </Button>
-                                    </Link>
-                                </div>
+                                            {selectedPlatforms.includes(platform.id) && (
+                                                <div className={cn('rounded-full p-1.5 shadow-lg ring-4 ring-card shrink-0 animate-in zoom-in duration-300', platform.color.replace('text-', 'bg-').replace('600', '500').replace('700', '600'))}>
+                                                    <Check className="w-3.5 h-3.5 text-white stroke-[4px]" />
+                                                </div>
+                                            )}
+                                        </button>
+                                    ))
+                                )}
+                                {platforms.length > 0 && (
+                                    <div className="p-4 pt-6">
+                                        <Link to="/settings/connections">
+                                            <Button variant="outline" className="w-full border-dashed border-border/60 bg-muted/5 hover:bg-muted/10 rounded-2xl h-14 text-[10px] font-black uppercase tracking-[0.15em] gap-3 text-muted-foreground/60 transition-all hover:text-foreground">
+                                                <PlusCircle className="w-5 h-5 opacity-40" />
+                                                Add More Accounts
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
@@ -647,14 +676,20 @@ export const CreatePost: React.FC = () => {
                             <div className="space-y-3">
                                 <h2 className="text-3xl font-black tracking-tight text-foreground">Publication Engaged</h2>
                                 <p className="text-muted-foreground text-sm font-medium leading-relaxed px-4">
-                                    Your content is being synchronized with <span className="text-foreground font-black uppercase">{selectedPlatforms.length}</span> global accounts.
+                                    Your content was successfully published to{' '}
+                                    <span className="text-foreground font-black uppercase">{selectedPlatforms.length}</span> account{selectedPlatforms.length !== 1 ? 's' : ''}.
                                 </p>
+                                {jobStatus?.result && (
+                                    <p className="text-[11px] text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-xl break-all">
+                                        Post ID: {jobStatus.result}
+                                    </p>
+                                )}
                             </div>
                             <div className="space-y-3 pt-4">
                                 <Link to="/posts" className="block">
-                                    <Button className="w-full h-14 rounded-2xl font-extrabold transition-all hover:scale-[1.02] active:scale-95 shadow-2xl shadow-primary/30 border-0 text-md">Return to Analytics</Button>
+                                    <Button className="w-full h-14 rounded-2xl font-extrabold transition-all hover:scale-[1.02] active:scale-95 shadow-2xl shadow-primary/30 border-0 text-md">Return to Posts</Button>
                                 </Link>
-                                <Button variant="ghost" className="w-full h-12 rounded-2xl font-bold text-xs text-muted-foreground/40" onClick={() => setShowSuccessModal(false)}>Close Overview</Button>
+                                <Button variant="ghost" className="w-full h-12 rounded-2xl font-bold text-xs text-muted-foreground/40" onClick={() => setShowSuccessModal(false)}>Close</Button>
                             </div>
                         </CardContent>
                     </Card>

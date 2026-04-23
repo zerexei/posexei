@@ -1,24 +1,152 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List
 import logging
+import uuid
+import json
 from shared.queue import RedisQueue
 from redis import Redis
 
 app = FastAPI(title="Social Account Service")
 logger = logging.getLogger(__name__)
 
-# Note: In production, configure Redis properly via env vars
 redis_client = Redis(host="redis", port=6379, db=0)
 queue = RedisQueue(redis_client, stream_name="jobs:social-account")
 
-@app.post("/accounts/link")
-def link_account(user_id: str, platform: str):
+# ---------------------------------------------------------------------------
+# In-memory store (replace with real DB in production)
+# Key schema: accounts:<account_id> -> JSON blob
+# Set of all accounts: accounts:all -> list of IDs
+# ---------------------------------------------------------------------------
+
+PROVIDER_LABELS = {
+    "facebook": "Facebook",
+    "instagram": "Instagram",
+    "twitter": "Twitter / X",
+    "linkedin": "LinkedIn",
+}
+
+
+class ConnectAccountRequest(BaseModel):
+    provider: str          # "facebook" | "instagram" | "twitter" | "linkedin"
+    name: str              # display name / page name
+    page_id: str           # platform-specific page/profile id
+    access_token: str      # Page Access Token or OAuth token
+
+
+class AccountOut(BaseModel):
+    id: str
+    provider: str
+    name: str
+    page_id: str
+    status: str            # "connected" | "expired"
+    connected_at: str
+
+
+def _all_accounts() -> List[dict]:
+    ids_raw = redis_client.get("accounts:all")
+    if not ids_raw:
+        return []
+    ids: list[str] = json.loads(ids_raw)
+    accounts = []
+    for aid in ids:
+        raw = redis_client.get(f"accounts:{aid}")
+        if raw:
+            accounts.append(json.loads(raw))
+    return accounts
+
+
+def _save_account(account: dict):
+    aid = account["id"]
+    redis_client.set(f"accounts:{aid}", json.dumps(account))
+    ids_raw = redis_client.get("accounts:all")
+    ids: list[str] = json.loads(ids_raw) if ids_raw else []
+    if aid not in ids:
+        ids.append(aid)
+    redis_client.set("accounts:all", json.dumps(ids))
+    # Also persist the access token separately (lookup by provider:page_id)
+    redis_client.set(f"token:{account['provider']}:{account['page_id']}", account["access_token"])
+
+
+def _delete_account(account_id: str):
+    raw = redis_client.get(f"accounts:{account_id}")
+    if raw:
+        account = json.loads(raw)
+        redis_client.delete(f"token:{account['provider']}:{account['page_id']}")
+    redis_client.delete(f"accounts:{account_id}")
+    ids_raw = redis_client.get("accounts:all")
+    if ids_raw:
+        ids = [i for i in json.loads(ids_raw) if i != account_id]
+        redis_client.set("accounts:all", json.dumps(ids))
+
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/accounts", response_model=List[AccountOut])
+def list_accounts():
+    return _all_accounts()
+
+
+@app.post("/accounts", response_model=AccountOut, status_code=201)
+def connect_account(req: ConnectAccountRequest):
+    if req.provider not in PROVIDER_LABELS:
+        raise HTTPException(status_code=400, detail=f"Unsupported provider: {req.provider}")
+
+    # Check for duplicate (same provider + page_id)
+    existing = [a for a in _all_accounts()
+                if a["provider"] == req.provider and a["page_id"] == req.page_id]
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Account already connected for {req.provider} / {req.page_id}"
+        )
+
+    account_id = str(uuid.uuid4())
+    from datetime import datetime, timezone
+    account = {
+        "id": account_id,
+        "provider": req.provider,
+        "name": req.name,
+        "page_id": req.page_id,
+        "access_token": req.access_token,
+        "status": "connected",
+        "connected_at": datetime.now(timezone.utc).strftime("%b %d, %Y"),
+    }
+    _save_account(account)
+
+    # Enqueue an async job to validate the token with the platform
+    idem_key = f"link:{account_id}"
     job_id = queue.enqueue({
         "type": "account_link",
-        "user_id": user_id,
-        "platform": platform,
-        "idempotency_key": f"link:{user_id}:{platform}"
+        "account_id": account_id,
+        "provider": req.provider,
+        "page_id": req.page_id,
+        "idempotency_key": idem_key,
     })
-    return {"status": "enqueued", "job_id": job_id}
+    logger.info(f"Account {account_id} queued for validation. job_id={job_id}")
+
+    return account
+
+
+@app.delete("/accounts/{account_id}", status_code=204)
+def disconnect_account(account_id: str):
+    raw = redis_client.get(f"accounts:{account_id}")
+    if not raw:
+        raise HTTPException(status_code=404, detail="Account not found")
+    _delete_account(account_id)
+    return None
+
+
+@app.get("/accounts/token/{provider}/{page_id}")
+def get_token(provider: str, page_id: str):
+    """Internal endpoint to retrieve the stored access token."""
+    token = redis_client.get(f"token:{provider}:{page_id}")
+    if not token:
+        raise HTTPException(status_code=404, detail="Token not found")
+    return {"access_token": token.decode("utf-8")}
+
 
 @app.get("/health")
 def health():

@@ -2,43 +2,46 @@ import { useState, useEffect, useCallback } from 'react';
 import { socialApi } from '../api/client';
 import type { JobStatusResponse } from '../api/types';
 
+const TERMINAL_STATUSES = new Set(['completed', 'failed', 'unknown']);
+
 export const useJobPolling = (jobId: string | null) => {
   const [jobStatus, setJobStatus] = useState<JobStatusResponse | null>(null);
   const [isPolling, setIsPolling] = useState(false);
 
-  const startPolling = useCallback(async () => {
-    if (!jobId) return;
-    
+  const resetJobStatus = useCallback(() => {
+    setJobStatus(null);
+    setIsPolling(false);
+  }, []);
+
+  const startPolling = useCallback(async (id: string) => {
     setIsPolling(true);
-    let isComplete = false;
     let attempts = 0;
-    
-    while (!isComplete && attempts < 60) { // Poll for up to 60 seconds
+
+    while (attempts < 60) {
       try {
-        const status = await socialApi.getJobStatus(jobId);
+        const status = await socialApi.getJobStatus(id);
         setJobStatus(status);
-        
-        if (status.status === 'completed' || status.status === 'failed' || status.status === 'unknown_or_completed') {
-          isComplete = true;
+
+        if (TERMINAL_STATUSES.has(status.status)) {
           setIsPolling(false);
-          break;
+          return;
         }
-      } catch (e) {
-        console.error('Failed to poll job status', e);
+      } catch {
+        // swallow transient network errors and keep polling
       }
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      await new Promise<void>(resolve => setTimeout(resolve, 1000));
       attempts++;
     }
-    
+
     setIsPolling(false);
-  }, [jobId]);
+  }, []);
 
   useEffect(() => {
     if (jobId) {
-      startPolling();
+      startPolling(jobId);
     }
   }, [jobId, startPolling]);
 
-  return { jobStatus, isPolling, setJobStatus };
+  return { jobStatus, isPolling, resetJobStatus };
 };

@@ -6,24 +6,26 @@ import { useJobPolling } from './useJobPolling';
 export const usePublishPost = () => {
   const [jobId, setJobId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
-  const { jobStatus, isPolling, setJobStatus } = useJobPolling(jobId);
+
+  const { jobStatus, isPolling, resetJobStatus } = useJobPolling(jobId);
 
   const publish = async (payload: PublishPostRequest) => {
     setError(null);
     setJobId(null);
-    setJobStatus(null);
-    
+    resetJobStatus();
+
     try {
       const response = await socialApi.publishPost(payload);
       setJobId(response.job_id);
-    } catch (e: any) {
-      setError(e.response?.data?.detail || e.message || 'Failed to enqueue post');
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { detail?: string } }; message?: string };
+      setError(err.response?.data?.detail ?? err.message ?? 'Failed to enqueue post');
     }
   };
 
   const isPending = !!jobId && isPolling;
-  const isSuccess = jobStatus?.status === 'completed' || jobStatus?.status === 'unknown_or_completed';
+  const isSuccess =
+    jobStatus?.status === 'completed' || jobStatus?.status === 'unknown';
   const isFailed = jobStatus?.status === 'failed' || !!error;
 
   return {
@@ -33,6 +35,6 @@ export const usePublishPost = () => {
     isPending,
     isSuccess,
     isFailed,
-    error
+    error,
   };
 };

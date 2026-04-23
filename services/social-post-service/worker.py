@@ -18,6 +18,7 @@ def handle_publish_to_facebook(payload: dict):
     idem_key = payload.get("idempotency_key")
     page_id = payload.get("page_id")
     message = payload.get("message")
+    provider = payload.get("provider", "facebook")
     
     # Check idempotency first
     if not idempotency.check_and_set(idem_key):
@@ -32,8 +33,19 @@ def handle_publish_to_facebook(payload: dict):
         redis_client.set(f"job_state:{job_id}", "failed", ex=86400)
         raise NonRetryableError("Invalid payload: page_id and message are required")
 
-    # Step 2: Retrieve Access Token (Mocked from ENV)
-    token = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN", "mocked_token")
+    # Step 2: Retrieve Access Token — first try social-account-service, fall back to ENV
+    try:
+        token_resp = httpx.get(
+            f"http://social-account-service:3001/accounts/token/{provider}/{page_id}",
+            timeout=5.0,
+        )
+        if token_resp.status_code == 200:
+            token = token_resp.json().get("access_token", "mocked_token")
+        else:
+            token = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN", "mocked_token")
+    except httpx.RequestError:
+        token = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN", "mocked_token")
+
     if not token:
         redis_client.set(f"job_state:{job_id}", "failed", ex=86400)
         raise NonRetryableError("Missing Facebook Page Access Token")
@@ -42,13 +54,12 @@ def handle_publish_to_facebook(payload: dict):
     base_url = os.getenv("GRAPH_API_BASE_URL", "https://graph.facebook.com/v19.0")
     url = f"{base_url}/{page_id}/feed"
     
-    logger.info(f"Publishing to Facebook Page {page_id}")
+    logger.info(f"Publishing to {provider} Page {page_id}")
     
     try:
         # Mocking for local dev if token is "mocked_token"
         if token == "mocked_token":
-            logger.info("Using mocked token, simulating successful Facebook response")
-            # Simulate network latency
+            logger.info("Using mocked token, simulating successful response")
             import time
             time.sleep(1)
             response_data = {"id": f"{page_id}_{job_id[:8]}"}
@@ -63,17 +74,15 @@ def handle_publish_to_facebook(payload: dict):
             redis_client.set(f"job_state:{job_id}", "failed", ex=86400)
             raise NonRetryableError(f"Facebook API Error (Non-Retryable): {e.response.text}")
         else:
-            # 5xx errors are retryable
             raise Exception(f"Facebook API Error (Retryable): {e.response.text}")
     except httpx.RequestError as e:
         raise Exception(f"Network error when calling Facebook: {e}")
 
     # Step 4: Store result
     fb_post_id = response_data.get("id")
-    logger.info(f"Successfully published. Facebook Post ID: {fb_post_id}")
-    
-    # Store success in state tracker
+    logger.info(f"Successfully published. Post ID: {fb_post_id}")
     redis_client.set(f"job_state:{job_id}", "completed", ex=86400)
+    redis_client.set(f"job_result:{job_id}", fb_post_id or "", ex=86400)
 
 if __name__ == "__main__":
     worker = Worker(
