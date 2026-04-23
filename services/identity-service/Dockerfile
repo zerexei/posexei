@@ -1,14 +1,15 @@
 FROM python:3.12-slim
 
 WORKDIR /app
-
 RUN pip install --no-cache-dir uv
 
-COPY pyproject.toml uv.lock ./
+COPY services/identity-service/pyproject.toml services/identity-service/uv.lock /app/services/identity-service/
+COPY services/shared/ /app/services/shared/
 
+WORKDIR /app/services/identity-service
 RUN uv sync --frozen
 
-COPY . .
+COPY services/identity-service/ /app/services/identity-service/
 
 EXPOSE 3001
 

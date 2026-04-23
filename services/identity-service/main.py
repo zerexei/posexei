@@ -1,6 +1,14 @@
 from fastapi import FastAPI
+import uuid
+import logging
+from shared.queue import RedisQueue
+from redis import Redis
 
 app = FastAPI()
+logger = logging.getLogger(__name__)
+
+redis_client = Redis(host="redis", port=6379, db=0)
+queue = RedisQueue(redis_client, stream_name="jobs:identity")
 
 
 @app.get("/users")
@@ -15,4 +23,10 @@ def get_user(user_id: int):
 
 @app.post("/users")
 def create_user(user: dict):
-    return {"message": "User created", "user": user}
+    idem_key = str(uuid.uuid4())
+    job_id = queue.enqueue({
+        "type": "create_user",
+        "user": user,
+        "idempotency_key": idem_key
+    })
+    return {"status": "enqueued", "job_id": job_id}

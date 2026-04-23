@@ -1,0 +1,34 @@
+# Async Job System and Resilience Layer Tasks
+
+- [x] Create `services/shared` directory and Python module
+  - [x] Implement Redis queue abstraction (`XADD`, `XREADGROUP`, etc.)
+  - [x] Implement Worker base class (polling, routing, retries, exponential backoff)
+  - [x] Implement DLQ routing and management logic
+  - [x] Implement Rate Limiter (Token bucket)
+  - [x] Implement Failure Simulator
+  - [x] Implement Idempotency Middleware helper
+  - [x] Implement Partial Failure utilities
+- [x] Update build contexts and Dockerfiles
+  - [x] Modify `docker-compose.yaml` backend service contexts to `..`
+  - [x] Add worker containers to `docker-compose.yaml` (`identity-worker`, etc.)
+  - [x] Update `Dockerfile` for `identity-service`
+  - [x] Update `Dockerfile` for `social-account-service`
+  - [x] Update `Dockerfile` for `social-post-service`
+  - [x] Update `Dockerfile` for `social-publish-service`
+  - [x] Update `Dockerfile` for `gateway/app`
+- [x] Integrate into `identity-service`
+  - [x] Create `worker.py` with `create_user` job
+  - [x] Update `pyproject.toml` to link `shared`
+- [x] Integrate into `social-account-service`
+  - [x] Create `worker.py` with `account_link` job and rate limiting
+  - [x] Update `pyproject.toml` to link `shared`
+- [x] Integrate into `social-post-service`
+  - [x] Create `worker.py` with `create_post` job and partial failures
+  - [x] Update `pyproject.toml` to link `shared`
+- [x] Integrate into `social-publish-service`
+  - [x] Create `worker.py` with `publish_post` job and failure simulation
+  - [x] Update `pyproject.toml` to link `shared`
+- [x] Update `gateway`
+  - [x] Add endpoints for DLQ inspection, replay, and job status
+  - [x] Update `pyproject.toml` to link `shared`
+- [ ] Manual testing and verification
