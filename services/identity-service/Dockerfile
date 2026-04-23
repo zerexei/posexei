@@ -13,4 +13,8 @@ COPY services/identity-service/ /app/services/identity-service/
 
 EXPOSE 3001
 
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3001"]
+CMD ["uv", "run", "opentelemetry-instrument", \
+     "--traces_exporter=otlp_proto_grpc", \
+     "--metrics_exporter=otlp_proto_grpc", \
+     "--logs_exporter=otlp_proto_grpc", \
+     "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3001"]

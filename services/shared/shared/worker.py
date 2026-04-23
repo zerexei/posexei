@@ -5,6 +5,11 @@ import logging
 from typing import Callable, Dict, Optional
 from redis import Redis
 from .queue import RedisQueue
+from .telemetry import (
+    get_tracer,
+    record_job_success,
+    record_job_failure,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -57,20 +62,33 @@ class Worker:
         payload["last_attempt_timestamp"] = time.time()
 
         try:
-            # Execute the handler
-            logger.info(f"Processing job {job_type} (id: {message_id}, attempt: {attempt})")
-            self.handlers[job_type](payload)
+            # Execute the handler inside an OTel span
+            tracer = get_tracer()
+            t0 = time.monotonic()
+            with tracer.start_as_current_span(
+                f"job.{job_type}",
+                kind=None,  # internal span
+            ) as span:
+                span.set_attribute("job.type", job_type)
+                span.set_attribute("job.id", message_id)
+                span.set_attribute("job.attempt", attempt)
+
+                logger.info(f"Processing job {job_type} (id: {message_id}, attempt: {attempt})")
+                self.handlers[job_type](payload)
+
+            duration = time.monotonic() - t0
+            record_job_success(job_type, duration)
             logger.info(f"Job {job_type} processed successfully")
             self.queue.ack_job(message_id)
             
         except Exception as e:
+            duration = time.monotonic() - t0
             error_msg = str(e)
             logger.error(f"Job {job_type} failed: {error_msg}")
-            
-            # Failure Classification
-            # If exception has an attribute `retryable` set to False, send to DLQ immediately
+
             is_retryable = getattr(e, "retryable", True)
-            
+            record_job_failure(job_type, duration, is_retryable)
+
             if not is_retryable or attempt >= self.max_retries:
                 logger.warning(f"Sending job to DLQ. Retryable: {is_retryable}, Attempt: {attempt}")
                 self.queue.dlq_job(payload_str, error_msg, attempt)
