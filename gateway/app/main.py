@@ -8,6 +8,36 @@ redis_client = Redis(host="redis", port=6379, db=0)
 
 app.include_router(identity_router)
 
+# Note: In a real app, use a proper reverse proxy or APIRouter pointing to the service.
+# For simplicity, we forward the request via httpx
+import httpx
+from pydantic import BaseModel
+from typing import Optional, List
+
+class PostRequest(BaseModel):
+    page_id: str
+    message: str
+    media_url: Optional[str] = None
+    platforms: List[str]
+
+@app.post("/social/posts")
+async def create_social_post(request: PostRequest):
+    # Forward to social-post-service (port 3001 inside docker network, or simply 'social-post-service:3001' if exposed)
+    # Wait, social-post-service is exposed on port 3001 internally if we use docker-compose
+    # Actually, uvicorn runs on 3001. So "http://social-post-service:3001/posts"
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                "http://social-post-service:3001/posts",
+                json=request.model_dump()
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/")
 def read_root():

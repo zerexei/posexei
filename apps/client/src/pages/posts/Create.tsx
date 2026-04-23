@@ -47,6 +47,8 @@ import {
 import { cn } from '@/lib/utils';
 import { mockConnections } from '@/mocks';
 import { useTitle } from '@/hooks/use-title';
+import { usePublishPost } from '@/hooks/usePublishPost';
+import { socialApi } from '@/api/client';
 
 const getPlatformIcon = (provider: string) => {
     switch (provider) {
@@ -87,6 +89,47 @@ export const CreatePost: React.FC = () => {
     const [newTag, setNewTag] = React.useState('');
     const [activePreviewTab, setActivePreviewTab] = React.useState('');
     const [showSuccessModal, setShowSuccessModal] = React.useState(false);
+    const [dlqJobs, setDlqJobs] = React.useState<any[]>([]);
+
+    const { publish, isPending, isSuccess, isFailed, error, jobStatus } = usePublishPost();
+
+    React.useEffect(() => {
+        if (isSuccess) {
+            setShowSuccessModal(true);
+        }
+    }, [isSuccess]);
+
+    const handlePublish = () => {
+        if (!selectedPlatforms.length || !content) return;
+        
+        // Use the first platform as page_id for demonstration (assuming account maps to page_id)
+        const pId = selectedPlatforms[0];
+        const platformObj = platforms.find(p => p.id === pId);
+        
+        publish({
+            page_id: platformObj?.account || 'mock_page_id', 
+            message: content,
+            platforms: selectedPlatforms.map(id => platforms.find(p => p.id === id)?.provider || 'facebook')
+        });
+    };
+
+    const handleCheckDlq = async () => {
+        try {
+            const data = await socialApi.getDlqJobs('social-post');
+            setDlqJobs(data.dlq_jobs || []);
+        } catch (e) {
+            console.error('Failed to fetch DLQ');
+        }
+    };
+
+    const handleReplayDlq = async (msgId: string) => {
+        try {
+            await socialApi.replayDlqJob('social-post', msgId);
+            handleCheckDlq(); // Refresh list
+        } catch (e) {
+            console.error('Failed to replay DLQ job');
+        }
+    };
 
     // Scheduling State
     const [scheduleDate, setScheduleDate] = React.useState('');
@@ -385,14 +428,42 @@ export const CreatePost: React.FC = () => {
                         </Dialog>
 
                         <Button 
-                            disabled={selectedPlatforms.length === 0} 
+                            disabled={selectedPlatforms.length === 0 || !content || isPending} 
                             className="rounded-xl px-8 h-10 font-bold shadow-md shadow-primary/20 transition-all active:scale-95"
-                            onClick={() => setShowSuccessModal(true)}
+                            onClick={handlePublish}
                         >
-                            Publish Content
+                            {isPending ? 'Publishing...' : 'Publish Content'}
                         </Button>
                     </div>
                 </div>
+
+                {isFailed && (
+                    <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-4 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p className="font-bold">Publication Failed</p>
+                            <p className="text-sm">{error || 'Job encountered an error or was routed to the DLQ.'}</p>
+                            <p className="text-xs opacity-70 mt-1">Status: {jobStatus?.last_step || jobStatus?.status || 'unknown'}</p>
+                        </div>
+                        <Button variant="outline" className="border-rose-500/50 text-rose-500 hover:bg-rose-500/10" onClick={handleCheckDlq}>
+                            Check DLQ
+                        </Button>
+                    </div>
+                )}
+                
+                {dlqJobs.length > 0 && (
+                    <div className="bg-muted border border-border p-4 rounded-xl flex flex-col gap-2">
+                        <p className="font-bold">Dead Letter Queue (Failed Jobs)</p>
+                        {dlqJobs.map((job, idx) => (
+                            <div key={idx} className="bg-background p-3 rounded border border-border flex items-center justify-between">
+                                <div className="text-sm truncate mr-4">
+                                    <span className="font-bold text-rose-500">Error:</span> {job.error} <br/>
+                                    <span className="text-xs text-muted-foreground">Retries: {job.retry_count}</span>
+                                </div>
+                                <Button size="sm" onClick={() => handleReplayDlq(job.message_id)}>Retry Job</Button>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0 overflow-y-auto no-scrollbar">
                     {/* Composition Column */}

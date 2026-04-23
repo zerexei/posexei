@@ -5,6 +5,8 @@ description = "Social post service"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.136.0",
+    "httpx>=0.28.1",
+    "pydantic>=2.10.6",
     "shared",
 ]
 
