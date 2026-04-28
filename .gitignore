@@ -34,3 +34,6 @@ yarn-error.log
 /observability/loki/data
 /observability/tempo/data
 /*.log
+
+
+certs
