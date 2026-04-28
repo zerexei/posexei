@@ -13,8 +13,37 @@ volumes:
 services:
 
   # =========================
-  # 🌐 FRONTEND
+  # Traefik reverse proxy
+  # src: https://doc.traefik.io/traefik/getting-started/docker
   # =========================
+  traefik:
+    image: traefik:v3.6.8
+    container_name: traefik
+    restart: unless-stopped
+    networks:
+      - app
+    command:
+      - "--configFile=/etc/traefik/traefik.yml"
+
+    ports:
+      - "80:80"
+      # - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik/traefik.yaml:/etc/traefik/traefik.yml
+      # - "../certs:/certs:ro"
+      # - "./traefik/dynamic:/etc/traefik/dynamic:ro"
+      # labels:
+      #   - "traefik.enable=true"
+      #   - "traefik.http.routers.dashboard.rule=Host(`dashboard.docker.localhost`)"
+      #   - "traefik.http.routers.dashboard.entrypoints=websecure"
+      #   - "traefik.http.routers.dashboard.service=api@internal"
+      #   - "traefik.http.routers.dashboard.tls=true"
+
+      # =========================
+      # 🌐 FRONTEND
+      # =========================
   client:
     build: ../apps/client
     depends_on:
@@ -29,6 +58,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`app.localhost`)"
       - "traefik.http.routers.app.entrypoints=web"
+      # - "traefik.http.routers.app.entrypoints=websecure"
+      # - "traefik.http.routers.app.tls=true"
       - "traefik.http.services.app.loadbalancer.server.port=3000"
 
   # =========================
@@ -50,6 +81,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.gateway.rule=Host(`gateway.localhost`)"
       - "traefik.http.routers.gateway.entrypoints=web"
+      # - "traefik.http.routers.gateway.entrypoints=websecure"
+      # - "traefik.http.routers.gateway.tls=true"
       - "traefik.http.services.gateway.loadbalancer.server.port=3001"
 
       # Attach middleware
@@ -212,26 +245,6 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
-    networks:
-      - app
-    restart: always
-
-  # =========================
-  # Traefik reverse proxy
-  # src: https://doc.traefik.io/traefik/getting-started/docker
-  # =========================
-  traefik:
-    image: traefik:v3.6.8
-    container_name: traefik
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--entrypoints.web.address=:80"
-    ports:
-      - "80:80"
-      - "8080:8080"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - app
     restart: always
