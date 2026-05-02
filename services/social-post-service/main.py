@@ -27,7 +27,7 @@ class PostRequest(BaseModel):
 def create_post(request: PostRequest):
     idem_key = str(uuid.uuid4())
     job_id = queue.enqueue({
-        "type": "publish_to_facebook",
+        "type": "create_post",
         "page_id": request.page_id,
         "provider": request.provider,
         "message": request.message,
