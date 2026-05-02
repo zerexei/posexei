@@ -193,45 +193,49 @@ def handle_publish_post(payload: dict):
         logger.info(f"Skipping duplicate publish: {idem_key}")
         return
 
-    redis_client.set(f"job_state:{job_id}", "processing", ex=86400)
-
-    # Step 1: Validate
-    if not page_id or not message:
-        redis_client.set(f"job_state:{job_id}", "failed", ex=86400)
-        raise NonRetryableError("Invalid payload: page_id and message are required")
-
-    # Step 2: Retrieve access token from social-account-service
     try:
-        token_resp = httpx.get(
-            f"http://social-account-service:3001/accounts/token/{provider}/{page_id}",
-            timeout=5.0,
-        )
-        if token_resp.status_code == 404:
-            # Fall back to ENV for legacy / dev use
+        redis_client.set(f"job_state:{job_id}", "processing", ex=86400)
+
+        # Step 1: Validate
+        if not page_id or not message:
+            redis_client.set(f"job_state:{job_id}", "failed", ex=86400)
+            raise NonRetryableError("Invalid payload: page_id and message are required")
+
+        # Step 2: Retrieve access token from social-account-service
+        try:
+            token_resp = httpx.get(
+                f"http://social-account-service:3001/accounts/token/{provider}/{page_id}",
+                timeout=5.0,
+            )
+            if token_resp.status_code == 404:
+                # Fall back to ENV for legacy / dev use
+                token = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN", "mocked_token")
+            else:
+                token_resp.raise_for_status()
+                token = token_resp.json().get("access_token", "mocked_token")
+        except httpx.RequestError:
+            # social-account-service unavailable — fall back to ENV
             token = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN", "mocked_token")
-        else:
-            token_resp.raise_for_status()
-            token = token_resp.json().get("access_token", "mocked_token")
-    except httpx.RequestError:
-        # social-account-service unavailable — fall back to ENV
-        token = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN", "mocked_token")
 
-    if not token:
-        redis_client.set(f"job_state:{job_id}", "failed", ex=86400)
-        raise NonRetryableError("No access token available for this page")
+        if not token:
+            redis_client.set(f"job_state:{job_id}", "failed", ex=86400)
+            raise NonRetryableError("No access token available for this page")
 
-    # Step 3: Call the platform API via the Adapter
-    adapter = ADAPTERS.get(provider)
-    if not adapter:
-        redis_client.set(f"job_state:{job_id}", "failed", ex=86400)
-        raise NonRetryableError(f"Unsupported provider: {provider}")
+        # Step 3: Call the platform API via the Adapter
+        adapter = ADAPTERS.get(provider)
+        if not adapter:
+            redis_client.set(f"job_state:{job_id}", "failed", ex=86400)
+            raise NonRetryableError(f"Unsupported provider: {provider}")
 
-    post_id = adapter.publish(page_id, message, token, job_id, media_url=media_url)
+        post_id = adapter.publish(page_id, message, token, job_id, media_url=media_url)
 
-    # Step 4: Store result
-    redis_client.set(f"job_state:{job_id}", "completed", ex=86400)
-    redis_client.set(f"job_result:{job_id}", post_id, ex=86400)
-    logger.info(f"Published successfully. Platform post ID: {post_id}")
+        # Step 4: Store result
+        redis_client.set(f"job_state:{job_id}", "completed", ex=86400)
+        redis_client.set(f"job_result:{job_id}", post_id, ex=86400)
+        logger.info(f"Published successfully. Platform post ID: {post_id}")
+    except Exception as e:
+        idempotency.clear(idem_key)
+        raise e
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
 import logging
@@ -24,8 +24,18 @@ class PostRequest(BaseModel):
 
 
 @app.post("/posts")
-def create_post(request: PostRequest):
-    idem_key = str(uuid.uuid4())
+def create_post(request: PostRequest, x_idempotency_key: Optional[str] = Header(None)):
+    # Backpressure: Prevent queue overload
+    try:
+        q_len = redis_client.xlen("jobs:social-post")
+        if q_len > 10000:
+            raise HTTPException(status_code=429, detail="Queue overload, please try again later")
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
+        logger.warning(f"Failed to check queue length: {e}")
+
+    idem_key = x_idempotency_key if x_idempotency_key else str(uuid.uuid4())
     job_id = queue.enqueue({
         "type": "create_post",
         "page_id": request.page_id,

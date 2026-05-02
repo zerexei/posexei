@@ -36,6 +36,13 @@ class IdempotencyMiddleware:
         result = self.redis.set(redis_key, "1", nx=True, ex=self.ttl)
         return bool(result)
 
+    def clear(self, key: str):
+        """
+        Clears the idempotency key so a failed job can be retried.
+        """
+        if key:
+            self.redis.delete(f"idempotency:{key}")
+
 
 class RateLimiter:
     def __init__(self, redis_client: Redis, max_requests: int, window_seconds: int):

@@ -24,34 +24,38 @@ def handle_create_post(payload: dict):
         logger.info(f"Skipping duplicate post creation: {idem_key}")
         return
 
-    # Update state to processing
-    redis_client.set(f"job_state:{job_id}", "processing", ex=86400)
+    try:
+        # Update state to processing
+        redis_client.set(f"job_state:{job_id}", "processing", ex=86400)
 
-    # Step 1: Validate
-    if not page_id or not message:
-        redis_client.set(f"job_state:{job_id}", "failed", ex=86400)
-        raise NonRetryableError("Invalid payload: page_id and message are required")
+        # Step 1: Validate
+        if not page_id or not message:
+            redis_client.set(f"job_state:{job_id}", "failed", ex=86400)
+            raise NonRetryableError("Invalid payload: page_id and message are required")
 
-    # Step 2: Store post in DB (simulated)
-    post_db_id = f"post_{job_id[:8]}"
-    logger.info(f"Successfully stored post in DB. DB Post ID: {post_db_id}")
+        # Step 2: Store post in DB (simulated)
+        post_db_id = f"post_{job_id[:8]}"
+        logger.info(f"Successfully stored post in DB. DB Post ID: {post_db_id}")
 
-    # Step 3: Delegate to social-publish-service via event
-    logger.info(f"Enqueueing publish job for {provider} Page {page_id}")
-    from shared.queue import RedisQueue
-    publish_queue = RedisQueue(redis_client, stream_name="jobs:social-publish")
-    publish_queue.enqueue({
-        "type": "publish_post",
-        "page_id": page_id,
-        "provider": provider,
-        "message": message,
-        "media_url": payload.get("media_url"),
-        "post_db_id": post_db_id,
-        "idempotency_key": f"pub_{idem_key}",
-        "job_id": job_id,
-    })
-    
-    # State remains processing as publish service will complete it
+        # Step 3: Delegate to social-publish-service via event
+        logger.info(f"Enqueueing publish job for {provider} Page {page_id}")
+        from shared.queue import RedisQueue
+        publish_queue = RedisQueue(redis_client, stream_name="jobs:social-publish")
+        publish_queue.enqueue({
+            "type": "publish_post",
+            "page_id": page_id,
+            "provider": provider,
+            "message": message,
+            "media_url": payload.get("media_url"),
+            "post_db_id": post_db_id,
+            "idempotency_key": f"pub_{idem_key}",
+            "job_id": job_id,
+        })
+        
+        # State remains processing as publish service will complete it
+    except Exception as e:
+        idempotency.clear(idem_key)
+        raise e
 
 
 if __name__ == "__main__":

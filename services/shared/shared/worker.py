@@ -109,11 +109,40 @@ class Worker:
                 self.queue.enqueue(payload) # Re-enqueue updated payload
 
 
+    def _claim_stalled_jobs(self):
+        """Claim jobs that have been stuck in the PEL for over 5 minutes (worker crashed)."""
+        try:
+            # 300000 ms = 5 minutes idle time
+            response = self.redis.xautoclaim(
+                self.queue.stream_name,
+                self.queue.group_name,
+                self.consumer_name,
+                300000,
+                start_id="0-0",
+                count=10
+            )
+            if response and len(response) >= 2:
+                messages = response[1]
+                for msg in messages:
+                    if len(msg) == 2:
+                        message_id, data = msg
+                        message_id_str = message_id.decode('utf-8') if isinstance(message_id, bytes) else message_id
+                        logger.info(f"Recovered stalled job {message_id_str}")
+                        self._process_message(message_id_str, data)
+        except Exception as e:
+            logger.error(f"Error claiming stalled jobs: {e}")
+
     def run(self):
         self.running = True
+        self.last_claim_time = time.time()
         logger.info(f"Worker {self.consumer_name} started listening on {self.queue.stream_name}")
         while self.running:
             try:
+                # Periodically claim stalled jobs
+                if time.time() - self.last_claim_time > 60:
+                    self._claim_stalled_jobs()
+                    self.last_claim_time = time.time()
+
                 # Read 1 message, block for 5 seconds
                 messages = self.queue.read_jobs(self.consumer_name, count=1, block=5000)
                 if not messages:
