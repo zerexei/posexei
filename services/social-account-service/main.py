@@ -6,8 +6,10 @@ import uuid
 import json
 from shared.queue import RedisQueue
 from redis import Redis
+from prometheus_fastapi_instrumentator import Instrumentator
 
 app = FastAPI(title="Social Account Service")
+Instrumentator().instrument(app).expose(app)
 logger = logging.getLogger(__name__)
 
 redis_client = Redis(host="redis", port=6379, db=0)

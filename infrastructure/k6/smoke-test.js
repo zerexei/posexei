@@ -9,19 +9,28 @@ const jobEnqueueTrend = new Trend('job_enqueue_duration', true);
 export const options = {
   scenarios: {
     smoke: {
+      executor: 'constant-vus',
+      vus: 1,
+      duration: '10s',
+      tags: { test_type: 'smoke' },
+    },
+    load: {
       executor: 'ramping-vus',
       startVUs: 0,
       stages: [
-        { duration: '10s', target: 10 },  // ramp up
-        { duration: '20s', target: 10 },  // sustained
-        { duration: '10s', target: 0 },   // ramp down
+        { duration: '30s', target: 20 },  // Ramp up to 20 users
+        { duration: '1m', target: 20 },   // Sustain 20 users
+        { duration: '30s', target: 0 },    // Ramp down
       ],
+      startTime: '10s',
+      tags: { test_type: 'load' },
     },
   },
   thresholds: {
-    http_req_duration: ['p(95)<500'],    // p95 < 500ms
-    errors: ['rate<0.01'],               // < 1% errors
-    job_enqueue_duration: ['p(95)<300'], // job enqueue p95 < 300ms
+    'http_req_duration{test_type:load}': ['p(95)<500'],
+    'http_req_duration{test_type:smoke}': ['p(95)<200'],
+    errors: ['rate<0.01'],
+    job_enqueue_duration: ['p(95)<300'],
   },
 };
 

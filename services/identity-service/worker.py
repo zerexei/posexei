@@ -3,6 +3,7 @@ import sys
 from redis import Redis
 from shared.worker import Worker
 from shared.utils import IdempotencyMiddleware
+from shared.telemetry import setup_telemetry
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ def handle_create_user(payload: dict):
     logger.info("User created successfully in DB")
 
 if __name__ == "__main__":
+    setup_telemetry("identity-worker")
     worker = Worker(
         redis_client=redis_client,
         stream_name="jobs:identity",

@@ -5,6 +5,7 @@ import httpx
 from redis import Redis
 from shared.worker import Worker
 from shared.utils import IdempotencyMiddleware, NonRetryableError
+from shared.telemetry import setup_telemetry
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -88,6 +89,7 @@ def _publish_to_facebook(page_id: str, message: str, token: str, job_id: str) ->
 
 
 if __name__ == "__main__":
+    setup_telemetry("social-publish-worker")
     worker = Worker(
         redis_client=redis_client,
         stream_name="jobs:social-publish",

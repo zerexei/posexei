@@ -4,6 +4,7 @@ import httpx
 from redis import Redis
 from shared.worker import Worker
 from shared.utils import IdempotencyMiddleware, NonRetryableError, RateLimiter, RateLimitExceeded
+from shared.telemetry import setup_telemetry
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -67,6 +68,7 @@ def handle_account_link(payload: dict):
 
 
 if __name__ == "__main__":
+    setup_telemetry("social-account-worker")
     worker = Worker(
         redis_client=redis_client,
         stream_name="jobs:social-account",

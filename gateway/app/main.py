@@ -5,8 +5,10 @@ from pydantic import BaseModel
 from typing import Optional, List
 from redis import Redis
 from routes.v1.identity import identity_router
+from prometheus_fastapi_instrumentator import Instrumentator
 
 app = FastAPI(title="Posexei Gateway")
+Instrumentator().instrument(app).expose(app)
 redis_client = Redis(host="redis", port=6379, db=0)
 
 app.include_router(identity_router)
