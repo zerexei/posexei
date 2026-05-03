@@ -12,8 +12,4 @@ RUN if [ -f uv.lock ]; then uv sync --frozen; else uv sync; fi
 COPY services/social-account-service/ /app/services/social-account-service/
 
 EXPOSE 3001
-CMD ["uv", "run", "opentelemetry-instrument", \
-     "--traces_exporter=otlp_proto_grpc", \
-     "--metrics_exporter=otlp_proto_grpc", \
-     "--logs_exporter=otlp_proto_grpc", \
-     "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3001"]
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3001"]

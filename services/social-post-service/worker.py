@@ -2,10 +2,13 @@ import structlog
 from redis import Redis
 from shared.worker import Worker
 from shared.utils import StateManager, IdempotencyMiddleware, NonRetryableError
-from shared.telemetry import setup_telemetry, setup_logging
+from shared.telemetry import setup_logging, init_telemetry, get_tracer
 
-setup_logging("social-post-worker")
+SERVICE_NAME = "social-post-worker"
+setup_logging(SERVICE_NAME)
+init_telemetry(SERVICE_NAME)
 logger = structlog.get_logger(__name__)
+tracer = get_tracer()
 
 redis_client = Redis(host="redis", port=6379, db=0)
 state_manager = StateManager(redis_client)
@@ -58,7 +61,6 @@ def handle_create_post(payload: dict):
 
 
 if __name__ == "__main__":
-    setup_telemetry("social-post-worker")
     worker = Worker(
         redis_client=redis_client,
         stream_name="jobs:social-post",
