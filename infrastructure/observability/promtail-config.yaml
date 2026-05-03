@@ -32,12 +32,16 @@ scrape_configs:
           expressions:
             trace_id: traceId
             span_id: spanId
-            level: levelname
-            message: message
+            level: level
+            message: event
+            timestamp: timestamp
       # If trace_id is present, promote as a label for Grafana correlation
       - labels:
           trace_id:
           level:
+      - timestamp:
+          source: timestamp
+          format: RFC3339
       # Drop empty trace_id label to keep cardinality low
       - label_drop:
           - trace_id

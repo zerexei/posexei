@@ -1,7 +1,7 @@
 import json
 import time
 import socket
-import logging
+import structlog
 from typing import Callable, Dict, Optional
 from redis import Redis
 from .queue import RedisQueue
@@ -11,7 +11,7 @@ from .telemetry import (
     record_job_failure,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 class Worker:
     def __init__(

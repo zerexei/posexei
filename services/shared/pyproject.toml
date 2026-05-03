@@ -10,4 +10,5 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-grpc>=1.29.0",
     "opentelemetry-instrumentation-redis>=0.50b0",
     "opentelemetry-instrumentation-httpx>=0.50b0",
+    "structlog>=24.1.0",
 ]

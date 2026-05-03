@@ -1,15 +1,14 @@
-import logging
-import sys
 import os
 import httpx
+import structlog
 from redis import Redis
 from abc import ABC, abstractmethod
 from shared.worker import Worker
 from shared.utils import IdempotencyMiddleware, NonRetryableError
-from shared.telemetry import setup_telemetry
+from shared.telemetry import setup_telemetry, setup_logging
 
-logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-logger = logging.getLogger(__name__)
+setup_logging("social-publish-worker")
+logger = structlog.get_logger(__name__)
 
 redis_client = Redis(host="redis", port=6379, db=0)
 idempotency = IdempotencyMiddleware(redis_client)

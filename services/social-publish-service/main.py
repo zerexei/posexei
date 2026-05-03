@@ -1,15 +1,19 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Optional
-import logging
+import structlog
 import uuid
 from shared.queue import RedisQueue
+from shared.telemetry import setup_logging, setup_telemetry
 from redis import Redis
 from prometheus_fastapi_instrumentator import Instrumentator
 
+setup_logging("social-publish-service")
+setup_telemetry("social-publish-service")
+logger = structlog.get_logger(__name__)
+
 app = FastAPI(title="Social Publish Service")
 Instrumentator().instrument(app).expose(app)
-logger = logging.getLogger(__name__)
 
 redis_client = Redis(host="redis", port=6379, db=0)
 queue = RedisQueue(redis_client, stream_name="jobs:social-publish")

@@ -1,11 +1,17 @@
 from fastapi import FastAPI, HTTPException
 import json
 import httpx
+import structlog
 from pydantic import BaseModel
 from typing import Optional, List
 from redis import Redis
 from routes.v1.identity import identity_router
 from prometheus_fastapi_instrumentator import Instrumentator
+from shared.telemetry import setup_logging, setup_telemetry
+
+setup_logging("gateway")
+setup_telemetry("gateway")
+logger = structlog.get_logger(__name__)
 
 app = FastAPI(title="Posexei Gateway")
 Instrumentator().instrument(app).expose(app)

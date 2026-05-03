@@ -1,13 +1,17 @@
 from fastapi import FastAPI
 import uuid
-import logging
+import structlog
 from shared.queue import RedisQueue
+from shared.telemetry import setup_logging, setup_telemetry
 from redis import Redis
 from prometheus_fastapi_instrumentator import Instrumentator
 
+setup_logging("identity-service")
+setup_telemetry("identity-service")
+logger = structlog.get_logger(__name__)
+
 app = FastAPI()
 Instrumentator().instrument(app).expose(app)
-logger = logging.getLogger(__name__)
 
 redis_client = Redis(host="redis", port=6379, db=0)
 queue = RedisQueue(redis_client, stream_name="jobs:identity")

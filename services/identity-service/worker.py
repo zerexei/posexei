@@ -1,12 +1,11 @@
-import logging
-import sys
+import structlog
 from redis import Redis
 from shared.worker import Worker
 from shared.utils import IdempotencyMiddleware
-from shared.telemetry import setup_telemetry
+from shared.telemetry import setup_telemetry, setup_logging
 
-logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-logger = logging.getLogger(__name__)
+setup_logging("identity-worker")
+logger = structlog.get_logger(__name__)
 
 redis_client = Redis(host="redis", port=6379, db=0)
 idempotency = IdempotencyMiddleware(redis_client)

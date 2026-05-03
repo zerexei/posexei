@@ -11,10 +11,47 @@ Usage in workers:
 """
 import os
 import logging
+import structlog
 from contextlib import contextmanager
 from typing import Generator, Optional
 
-logger = logging.getLogger(__name__)
+def add_otel_context(logger, method_name, event_dict):
+    """Processor to inject traceId and spanId into structlog event_dict."""
+    try:
+        from opentelemetry import trace
+        span = trace.get_current_span()
+        if span and span.get_span_context().is_valid:
+            event_dict["traceId"] = format(span.get_span_context().trace_id, "032x")
+            event_dict["spanId"] = format(span.get_span_context().span_id, "016x")
+    except ImportError:
+        pass
+    return event_dict
+
+def setup_logging(service_name: str, level: str = "INFO"):
+    """
+    Configure structlog to output JSON and inject OTel trace context.
+    Also redirects standard logging to structlog.
+    """
+    logging.basicConfig(
+        format="%(message)s",
+        level=getattr(logging, level.upper(), logging.INFO),
+    )
+
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.add_log_level,
+            structlog.processors.format_exc_info,
+            structlog.processors.TimeStamper(fmt="iso"),
+            add_otel_context,
+            structlog.processors.JSONRenderer(),
+        ],
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
+        cache_logger_on_first_use=True,
+    )
+
+logger = structlog.get_logger(__name__)
 
 # ---------------------------------------------------------------------------
 # Lazy OTel imports — gracefully no-op if SDK not installed
