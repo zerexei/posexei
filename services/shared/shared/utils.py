@@ -1,7 +1,13 @@
+import os
 import time
 import random
 import logging
 from redis import Redis
+
+try:
+    import psycopg2
+except ImportError:
+    psycopg2 = None
 
 logger = logging.getLogger(__name__)
 
@@ -89,16 +95,64 @@ class FailureSimulator:
 
 
 class StateManager:
-    """Manages state for partial failure handling"""
+    """Manages state for partial failure handling using Postgres (fallback to Redis)"""
     def __init__(self, redis_client: Redis, ttl_seconds: int = 86400):
         self.redis = redis_client
         self.ttl = ttl_seconds
-        
+        self.db_url = os.getenv("DATABASE_URL")
+        self._init_db()
+
+    def _init_db(self):
+        if not self.db_url or not psycopg2:
+            return
+        try:
+            with psycopg2.connect(self.db_url) as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS job_execution_state (
+                            job_id VARCHAR(255) PRIMARY KEY,
+                            last_step VARCHAR(255) NOT NULL,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        );
+                    """)
+                conn.commit()
+        except Exception as e:
+            logger.warning(f"Failed to initialize Postgres state table: {e}. Falling back to Redis.")
+            self.db_url = None
+
     def save_step(self, job_id: str, step_name: str):
+        if self.db_url:
+            try:
+                with psycopg2.connect(self.db_url) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            INSERT INTO job_execution_state (job_id, last_step, updated_at)
+                            VALUES (%s, %s, CURRENT_TIMESTAMP)
+                            ON CONFLICT (job_id) DO UPDATE 
+                            SET last_step = EXCLUDED.last_step, updated_at = EXCLUDED.updated_at;
+                        """, (job_id, step_name))
+                    conn.commit()
+                return
+            except Exception as e:
+                logger.error(f"Failed to save step to Postgres: {e}")
+        
+        # Fallback to Redis
         redis_key = f"job_state:{job_id}"
         self.redis.set(redis_key, step_name, ex=self.ttl)
         
     def get_last_step(self, job_id: str) -> str:
+        if self.db_url:
+            try:
+                with psycopg2.connect(self.db_url) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT last_step FROM job_execution_state WHERE job_id = %s;", (job_id,))
+                        row = cur.fetchone()
+                        if row:
+                            return row[0]
+            except Exception as e:
+                logger.error(f"Failed to get step from Postgres: {e}")
+
+        # Fallback to Redis
         redis_key = f"job_state:{job_id}"
         val = self.redis.get(redis_key)
         return val.decode("utf-8") if val else None

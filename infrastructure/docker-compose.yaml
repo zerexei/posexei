@@ -73,32 +73,27 @@ services:
     build:
       context: ..
       dockerfile: gateway/app/Dockerfile
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=gateway
+    volumes:
+      - ../gateway/app:/app/gateway/app
+      - ../services/shared:/app/services/shared
+    networks:
+      - app
     depends_on:
       - traefik
       - identity-service
       - social-account-service
       - social-post-service
       - social-publish-service
-    networks:
-      - app
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.gateway.rule=Host(`gateway.localhost`)"
       - "traefik.http.routers.gateway.entrypoints=web"
       - "traefik.http.services.gateway.loadbalancer.server.port=3001"
-      - "traefik.http.routers.gateway.middlewares=gateway-cors"
-      - "traefik.http.middlewares.gateway-cors.headers.accesscontrolalloworigin\
-        list=http://app.localhost"
-      - "traefik.http.middlewares.gateway-cors.headers.accesscontrolallowmethod\
-        s=GET,OPTIONS,PUT,POST,DELETE"
-      - "traefik.http.middlewares.gateway-cors.headers.accesscontrolallowheader\
-        s=*"
-      - "traefik.http.middlewares.gateway-cors.headers.accesscontrolallowcreden\
-        tials=true"
+      - "traefik.http.routers.gateway.middlewares=gateway-cors@file"
       - "logging=promtail"
-    environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - OTEL_SERVICE_NAME=gateway
 
   # =========================
   # 🔐 Identity Service
@@ -134,7 +129,7 @@ services:
       - identity-db
       - redis
       - otel-collector
-    command: ["uv", "run", "python", "worker.py"]
+    command: [ "uv", "run", "python", "worker.py" ]
     networks:
       - app
 
@@ -181,7 +176,7 @@ services:
       - social-post-db
       - redis
       - otel-collector
-    command: ["uv", "run", "python", "worker.py"]
+    command: [ "uv", "run", "python", "worker.py" ]
     networks:
       - app
 
@@ -228,7 +223,7 @@ services:
       - social-account-db
       - redis
       - otel-collector
-    command: ["uv", "run", "python", "worker.py"]
+    command: [ "uv", "run", "python", "worker.py" ]
     networks:
       - app
 
@@ -272,7 +267,7 @@ services:
     depends_on:
       - redis
       - otel-collector
-    command: ["uv", "run", "python", "worker.py"]
+    command: [ "uv", "run", "python", "worker.py" ]
     networks:
       - app
 
@@ -295,7 +290,7 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.96.0
     container_name: otel-collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
     volumes:
       - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml
     networks:
@@ -347,7 +342,7 @@ services:
   tempo:
     image: grafana/tempo:2.4.0
     container_name: tempo
-    command: ["-config.file=/etc/tempo.yaml"]
+    command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - ./observability/tempo-config.yaml:/etc/tempo.yaml
       - tempo-data:/var/tempo
@@ -364,4 +359,3 @@ services:
       - ./observability/promtail-config.yaml:/etc/promtail/config.yml
     networks:
       - app
-

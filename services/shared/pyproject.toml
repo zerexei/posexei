@@ -11,4 +11,5 @@ dependencies = [
     "opentelemetry-instrumentation-redis>=0.50b0",
     "opentelemetry-instrumentation-httpx>=0.50b0",
     "structlog>=24.1.0",
+    "psycopg2-binary>=2.9.9",
 ]

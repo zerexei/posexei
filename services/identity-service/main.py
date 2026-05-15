@@ -9,6 +9,18 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 from shared.queue import RedisQueue
 from shared.telemetry import setup_logging, init_telemetry, get_tracer
+"""
+pip install fastapi sqlalchemy alembic asyncpg uvicorn
+alembic revision --autogenerate -m "create users table"
+alembic upgrade head
+
+async with session.begin():
+    alice.balance -= 1000
+    bob.balance += 1000
+    # actions...
+
+"""
+
 
 # Manual Initialization
 SERVICE_NAME = "identity-service"

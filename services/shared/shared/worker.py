@@ -1,6 +1,7 @@
 import json
 import time
 import socket
+import threading
 import structlog
 from typing import Callable, Dict, Optional
 from redis import Redis
@@ -32,6 +33,18 @@ class Worker:
         self.backoff_multiplier = backoff_multiplier
         self.handlers: Dict[str, Callable] = {}
         self.running = False
+        self.active_jobs = set()
+        self.heartbeat_thread = None
+
+    def _heartbeat_loop(self):
+        while self.running:
+            try:
+                for message_id in list(self.active_jobs):
+                    lease_key = f"job_lease:{message_id}"
+                    self.redis.set(lease_key, "1", ex=120)  # 2 min lease
+            except Exception as e:
+                logger.error(f"Heartbeat error: {e}")
+            time.sleep(30)
 
     def register_handler(self, job_type: str, handler: Callable):
         self.handlers[job_type] = handler
@@ -94,19 +107,35 @@ class Worker:
                 self.queue.dlq_job(payload_str, error_msg, attempt)
                 self.queue.ack_job(message_id)
             else:
-                # Schedule retry
+                # Schedule retry using delayed queue (ZSET)
                 backoff = self.calculate_backoff(attempt)
-                logger.info(f"Scheduling retry in {backoff} seconds...")
-                # Note: Simple approach is sleeping in the worker (blocks this worker)
-                # Production approach: Put in a separate delayed queue.
-                # For this implementation, we sleep (which applies backpressure).
-                time.sleep(backoff)
+                execute_at = time.time() + backoff
+                logger.info(f"Scheduling retry in {backoff} seconds via delayed queue...")
                 
-                # We do not ACK the job so it remains pending, but to avoid it being picked up 
-                # immediately by same/another worker if we XACK and XADD, we can XADD with updated attempt
-                # and XACK the old one.
+                delayed_key = f"{self.queue.stream_name}:delayed"
+                self.redis.zadd(delayed_key, {json.dumps(payload): execute_at})
+                
                 self.queue.ack_job(message_id)
-                self.queue.enqueue(payload) # Re-enqueue updated payload
+
+    def _process_delayed_jobs(self):
+        """Move ready jobs from delayed ZSET to the main stream"""
+        delayed_key = f"{self.queue.stream_name}:delayed"
+        now = time.time()
+        
+        # Get ready jobs
+        ready_jobs = self.redis.zrangebyscore(delayed_key, 0, now)
+        if not ready_jobs:
+            return
+            
+        for payload_bytes in ready_jobs:
+            try:
+                payload = json.loads(payload_bytes.decode("utf-8"))
+                self.queue.enqueue(payload)
+                self.redis.zrem(delayed_key, payload_bytes)
+                logger.info(f"Moved delayed job back to stream {self.queue.stream_name}")
+            except Exception as e:
+                logger.error(f"Failed to process delayed job: {e}")
+                self.redis.zrem(delayed_key, payload_bytes)
 
 
     def _claim_stalled_jobs(self):
@@ -127,6 +156,13 @@ class Worker:
                     if len(msg) == 2:
                         message_id, data = msg
                         message_id_str = message_id.decode('utf-8') if isinstance(message_id, bytes) else message_id
+                        
+                        # Check lease
+                        lease_key = f"job_lease:{message_id_str}"
+                        if self.redis.exists(lease_key):
+                            logger.info(f"Job {message_id_str} has active lease. Skipping autoclaim.")
+                            continue
+                            
                         logger.info(f"Recovered stalled job {message_id_str}")
                         self._process_message(message_id_str, data)
         except Exception as e:
@@ -135,9 +171,16 @@ class Worker:
     def run(self):
         self.running = True
         self.last_claim_time = time.time()
+        
+        self.heartbeat_thread = threading.Thread(target=self._heartbeat_loop, daemon=True)
+        self.heartbeat_thread.start()
+        
         logger.info(f"Worker {self.consumer_name} started listening on {self.queue.stream_name}")
         while self.running:
             try:
+                # Process delayed jobs
+                self._process_delayed_jobs()
+
                 # Periodically claim stalled jobs
                 if time.time() - self.last_claim_time > 60:
                     self._claim_stalled_jobs()
@@ -151,7 +194,12 @@ class Worker:
                 for stream, msgs in messages:
                     for message_id, data in msgs:
                         message_id_str = message_id.decode('utf-8')
-                        self._process_message(message_id_str, data)
+                        self.active_jobs.add(message_id_str)
+                        try:
+                            self._process_message(message_id_str, data)
+                        finally:
+                            self.active_jobs.discard(message_id_str)
+                            self.redis.delete(f"job_lease:{message_id_str}")
 
             except Exception as e:
                 logger.error(f"Error in worker loop: {e}")
